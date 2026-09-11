@@ -1,0 +1,5 @@
+import {z} from 'zod';
+export const founderFields={title:z.string().trim().max(100),benefits:z.string().trim().max(2000),supply:z.number().int().min(0).max(100000),price:z.string().regex(/^(0|[1-9]\d{0,8})(\.\d{1,6})?$/),currency:z.enum(['ETH','USDC']),network:z.enum(['base-sepolia','base']),delivery:z.string().trim().max(2000),migration:z.string().trim().max(2000),cancellation:z.string().trim().max(2000),airdrop:z.string().trim().max(2000)};
+export const founderDraftSchema=z.object(founderFields).strict();
+export const founderPublishSchema=founderDraftSchema.superRefine((v,ctx)=>{for(const field of ['title','benefits','delivery','migration','cancellation','airdrop'] as const)if(v[field].length<(field==='title'?3:30))ctx.addIssue({code:'custom',path:[field],message:'Complete this term before announcement.'});if(v.supply<1||Number(v.price)<=0)ctx.addIssue({code:'custom',message:'Specify supply and price before announcement.'})});
+export const defaultFounder={title:'Founding Scavenger NFT',benefits:'',supply:0,price:'0',currency:'USDC' as const,network:'base' as const,delivery:'',migration:'',cancellation:'',airdrop:''};

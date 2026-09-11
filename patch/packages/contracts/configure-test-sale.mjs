@@ -1,0 +1,21 @@
+import {createPublicClient,createWalletClient,http,isAddress,parseAbi,parseUnits} from 'viem';
+import {privateKeyToAccount} from 'viem/accounts';
+import {baseSepolia} from 'viem/chains';
+if(process.env.BLOCKCHAIN_NETWORK!=='base-sepolia') throw Error('Testnet only.');
+const account=privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY);
+const transport=http(process.env.BASE_RPC_URL||'https://sepolia.base.org');
+const rpc=createPublicClient({chain:baseSepolia,transport});
+const wallet=createWalletClient({chain:baseSepolia,transport,account});
+if(await rpc.getChainId()!==84532) throw Error('Wrong chain.');
+const token=process.env.TEST_TOKEN_CONTRACT,router=process.env.PAYMENT_ROUTER,market=process.env.MARKETPLACE_CONTRACT;
+if(![token,router,market].every(v=>v&&isAddress(v))) throw Error('Set TEST_TOKEN_CONTRACT, PAYMENT_ROUTER and MARKETPLACE_CONTRACT.');
+const id=Number(process.env.TEST_PARCEL_ID);
+if(!Number.isInteger(id)||id<1||id>100) throw Error('Set TEST_PARCEL_ID explicitly (1-100). Choose an unminted parcel.');
+const price=parseUnits(process.env.TEST_PARCEL_PRICE||'100',18);
+if(price<=0n) throw Error('Price must be positive.');
+const abi=parseAbi(['function setCurrency(address,bool)','function configureSale(uint256,address,uint256,bool)']);
+async function send(address,functionName,args){const {request}=await rpc.simulateContract({address,abi,functionName,args,account});const hash=await wallet.writeContract(request);const r=await rpc.waitForTransactionReceipt({hash,confirmations:2});if(r.status!=='success')throw Error('Transaction reverted: '+hash);console.log(functionName,hash);}
+await send(router,'setCurrency',[token,true]);
+await send(market,'setCurrency',[token,true]);
+await send(router,'configureSale',[BigInt(id),token,price,true]);
+console.log('Test sale configured. Verify /land and buy with a different test wallet.');

@@ -1,0 +1,4 @@
+import {db,identity,json,fail,sameOrigin,readJson} from '@/lib/server';
+import {z} from 'zod';
+export async function GET(req:Request){try{const id=await identity(req);const interest=await db().prepare('SELECT preference FROM founder_interest WHERE user_id=?').bind(id).first();return json({interest})}catch(e){return fail(e)}}
+export async function POST(req:Request){try{sameOrigin(req);const id=await identity(req);const b=z.object({preference:z.enum(['nft','land','both','withdraw'])}).strict().parse(await readJson(req));if(b.preference==='withdraw')await db().prepare('DELETE FROM founder_interest WHERE user_id=?').bind(id).run();else await db().prepare('INSERT INTO founder_interest(user_id,preference,created_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET preference=excluded.preference').bind(id,b.preference,Date.now()).run();return GET(req)}catch(e){return fail(e)}}

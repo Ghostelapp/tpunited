@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trashpanda
+      POSTGRES_USER: trashpanda
+      POSTGRES_PASSWORD: local-development-only
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data", "./packages/database/postgres.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trashpanda"]
+      interval: 5s
+      retries: 10
+  indexer:
+    build: .
+    profiles: ["blockchain"]
+    command: ["node", "apps/indexer/indexer.mjs"]
+    env_file: .env.testnet
+    environment:
+      DATABASE_URL: postgresql://trashpanda:local-development-only@postgres:5432/trashpanda
+    volumes: ["./deployments:/app/deployments:ro"]
+    depends_on:
+      postgres: {condition: service_healthy}
+volumes:
+  postgres_data:

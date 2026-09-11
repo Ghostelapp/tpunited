@@ -1,0 +1,30 @@
+import {z} from 'zod';
+import {db} from './server';
+import {dailyFor,type GameState} from '@/packages/game-core/world';
+export const categoryNames={daily:'Daily quests',explore:'Salvage caches',dungeon:'Dungeon clear',social:'Approved social quests',referral:'Qualified referrals'};
+export type Category=keyof typeof categoryNames;
+const rule=z.object({points:z.number().int().min(1).max(1000),cap:z.number().int().min(1).max(5000)}).strict();
+export const rulesSchema=z.object({daily:rule,explore:rule,dungeon:rule,social:rule,referral:rule.optional(),minPoints:z.number().int().min(1).max(100000),minDays:z.number().int().min(1).max(90)}).strict().refine(r=>(['daily','explore','dungeon','social'] as const).every(k=>r[k].cap>=r[k].points)&&(!r.referral||r.referral.cap>=r.referral.points),{message:'Daily cap must cover at least one award.'});
+export const defaultRules={daily:{points:20,cap:60},explore:{points:10,cap:30},dungeon:{points:75,cap:75},social:{points:20,cap:40},referral:{points:30,cap:60},minPoints:300,minDays:3};
+export type Season={id:string;title:string;status:string;rules:string;starts_at:number;ends_at:number;frozen_at:number|null};
+export function gameAchievements(before:GameState,after:GameState,now:number){const old=dailyFor(before,now),next=dailyFor(after,now),day=next.day;const found:{category:Category;source:string}[]=[];for(const id of next.claimed)if(!old.claimed.includes(id))found.push({category:'daily',source:`daily:${day}:${id}`});for(const id of next.caches)if(!old.caches.includes(id))found.push({category:'explore',source:`cache:${day}:${id}`});if(after.dungeon?.cleared&&!before.dungeon?.cleared)found.push({category:'dungeon',source:`dungeon:${after.dungeon.run}`});return found;}
+// Run inside the same D1 batch as the successful authoritative mutation.
+// Cap and uniqueness are evaluated inside INSERT, never in a read-then-write counter.
+export function award(userId:string,category:Category,source:string,now:number,guard='1',guardArgs:unknown[]=[]){const day=new Date(now).toISOString().slice(0,10);return db().prepare(`INSERT INTO season_events(id,season_id,user_id,source,category,day,points,created_at)
+ SELECT ?,s.id,?,?,?,?,MIN(json_extract(s.rules,'$.${category}.points'),MAX(0,json_extract(s.rules,'$.${category}.cap')-COALESCE((SELECT SUM(points) FROM season_events e WHERE e.season_id=s.id AND e.user_id=? AND e.day=? AND e.category=?),0))),?
+ FROM seasons s JOIN registrations r ON r.user_id=? AND r.status='active'
+ WHERE json_extract(s.rules,'$.${category}.points') IS NOT NULL AND s.status='active' AND s.starts_at<=? AND s.ends_at>? AND (${guard})
+ AND NOT EXISTS(SELECT 1 FROM season_exclusions x WHERE x.season_id=s.id AND x.user_id=r.user_id)
+ AND EXISTS(SELECT 1 FROM account_wallets w WHERE w.user_id=r.user_id)
+ ON CONFLICT(season_id,user_id,source) DO NOTHING`).bind(crypto.randomUUID(),userId,source,category,day,userId,day,category,now,userId,now,now,...guardArgs)}
+// Exclude zero-point (cap reached) events from both score and active-day counts.
+export const rankingSQL=`WITH totals AS (
+ SELECT e.user_id,r.username,w.address wallet,SUM(e.points) points,COUNT(DISTINCT e.day) active_days,MIN(e.created_at) first_at
+ FROM season_events e JOIN registrations r ON r.user_id=e.user_id AND r.status='active' JOIN account_wallets w ON w.user_id=e.user_id
+ WHERE e.season_id=? AND e.points>0 AND e.created_at<? AND NOT EXISTS(SELECT 1 FROM season_exclusions x WHERE x.season_id=e.season_id AND x.user_id=e.user_id)
+ GROUP BY e.user_id), ranked AS (SELECT *,ROW_NUMBER() OVER(ORDER BY points DESC,first_at,user_id) rank,CASE WHEN points>=? AND active_days>=? THEN 1 ELSE 0 END eligible FROM totals), shares AS (
+ SELECT *,CASE WHEN eligible=1 THEN 40.0/NULLIF(SUM(eligible) OVER(),0)+60.0*points/NULLIF(SUM(CASE WHEN eligible=1 THEN points ELSE 0 END) OVER(),0) ELSE 0 END share FROM ranked)
+ SELECT * FROM shares`;
+export type Entry={user_id:string;username:string;rank:number;points:number;active_days:number;eligible:number;share:number|string;wallet?:string};
+export function rankQuery(s:Season,until=Number.MAX_SAFE_INTEGER){const rules=rulesSchema.parse(JSON.parse(s.rules));return {sql:rankingSQL,args:[s.id,until,rules.minPoints,rules.minDays]};}
+export async function board(s:Season,page:number,userId?:string){const q=rankQuery(s),frozen=s.status==='frozen';const sql=frozen?'SELECT * FROM season_final WHERE season_id=?':q.sql,args=frozen?[s.id]:q.args;const rows=await db().prepare(`SELECT * FROM (${sql}) ORDER BY rank LIMIT 50 OFFSET ?`).bind(...args,page*50).all<Entry>();const mine=userId?await db().prepare(`SELECT * FROM (${sql}) WHERE user_id=?`).bind(...args,userId).first<Entry>():null;const stats=await db().prepare(`SELECT COUNT(*) participants,COALESCE(SUM(eligible),0) eligible FROM (${sql})`).bind(...args).first();const previous=rankQuery(s,Date.parse(new Date().toISOString().slice(0,10)+'T00:00:00Z'));const ids=[...rows.results.map(r=>r.user_id),...(mine?[mine.user_id]:[])];const prior=!frozen&&ids.length?await db().prepare(`SELECT user_id,rank FROM (${previous.sql}) WHERE user_id IN (${ids.map(()=>'?').join(',')})`).bind(...previous.args,...ids).all<{user_id:string;rank:number}>():{results:[]};const ranks=new Map(prior.results.map(r=>[r.user_id,r.rank]));const clean=(r:Entry)=>({username:r.username,rank:r.rank,points:r.points,activeDays:r.active_days,eligible:!!r.eligible,share:Number(r.share),isMe:r.user_id===userId,change:frozen?null:ranks.has(r.user_id)?ranks.get(r.user_id)!-r.rank:null});const today=new Date().toISOString().slice(0,10);const earned=userId?await db().prepare('SELECT category,SUM(points) points FROM season_events WHERE season_id=? AND user_id=? AND day=? GROUP BY category').bind(s.id,userId,today).all():{results:[]};const excluded=userId?!!await db().prepare('SELECT id FROM season_exclusions WHERE season_id=? AND user_id=?').bind(s.id,userId).first():false;return {rows:rows.results.map(clean),mine:mine?clean(mine):null,stats,today:earned.results,excluded,page};}

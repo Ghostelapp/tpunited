@@ -1,0 +1,30 @@
+import fs from 'node:fs';
+import {createPublicClient,createWalletClient,http} from 'viem';
+import {privateKeyToAccount} from 'viem/accounts';
+import {baseSepolia} from 'viem/chains';
+if(process.env.BLOCKCHAIN_NETWORK!=='base-sepolia') throw Error('Set BLOCKCHAIN_NETWORK=base-sepolia. Testnet only.');
+if(!process.env.DEPLOYER_PRIVATE_KEY) throw Error('Set DEPLOYER_PRIVATE_KEY privately in your local terminal.');
+const account=privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY);
+const transport=http(process.env.BASE_RPC_URL||'https://sepolia.base.org');
+const rpc=createPublicClient({chain:baseSepolia,transport});
+if(await rpc.getChainId()!==84532) throw Error('RPC must point to Base Sepolia.');
+const artifact=JSON.parse(fs.readFileSync('packages/contracts/artifacts/TrashPandaTestToken.json','utf8'));
+const wallet=createWalletClient({chain:baseSepolia,transport,account});
+fs.mkdirSync('deployments',{recursive:true});
+const file='deployments/test-token-base-sepolia.json';
+let saved=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):null;
+if(saved && (saved.chainId!==84532 || saved.deployer.toLowerCase()!==account.address.toLowerCase())) throw Error('Saved deployment identity mismatch.');
+if(!saved){
+ const hash=await wallet.deployContract({...artifact,args:[]});
+ saved={chainId:84532,deployer:account.address,hash};
+ fs.writeFileSync(file,JSON.stringify(saved,null,2));
+ console.log('Submitted:',hash);
+}
+const receipt=await rpc.waitForTransactionReceipt({hash:saved.hash,confirmations:2});
+if(receipt.status!=='success'||!receipt.contractAddress) throw Error('Deployment reverted; inspect transaction before retry.');
+const address=receipt.contractAddress;
+const code=await rpc.getCode({address});
+if(!code||code==='0x') throw Error('No contract code.');
+if(await rpc.readContract({address,abi:artifact.abi,functionName:'symbol'})!=='tTPU') throw Error('Unexpected token.');
+fs.writeFileSync(file,JSON.stringify({...saved,address,blockNumber:String(receipt.blockNumber)},null,2));
+console.log(JSON.stringify({TEST_TOKEN_CONTRACT:address,PAYMENT_TOKEN:address,PAYMENT_TOKEN_SYMBOL:'tTPU',PAYMENT_TOKEN_DECIMALS:'18',TOKEN_ENABLED:'true'},null,2));

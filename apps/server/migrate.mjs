@@ -1,0 +1,1 @@
+import pg from 'pg';import fs from 'node:fs';const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});await pool.query(fs.readFileSync('packages/database/postgres.sql','utf8'));await pool.end();console.log('PostgreSQL schema ready.');

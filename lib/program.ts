@@ -1,0 +1,7 @@
+export const programRules={daily:{points:20,cap:60},explore:{points:10,cap:30},dungeon:{points:75,cap:75},social:{points:20,cap:40},referral:{points:30,cap:60},minPoints:500,minDays:7};
+export const programSeasonId='29d68d32-6793-48e1-9ced-440a64ec1020';
+export const programQuests=[
+ {id:'29d68d32-6793-48e1-9ced-440a64ec1021',title:'Show your first adventure',description:'Publish an original 30–90 second gameplay clip of Trash Panda United. Show actual gameplay and explain what you enjoyed or what needs work. Include a link to the game and disclose that the post is a rewarded community quest. Submit the public post URL. One original submission per account; copied clips, fabricated footage and spam are rejected.'},
+ {id:'29d68d32-6793-48e1-9ced-440a64ec1022',title:'Help a new scavenger',description:'Create an original beginner guide covering movement, one quest and a useful tip. Use your own screenshots or gameplay. Publish it publicly with a game link and a rewarded-quest disclosure. Submit the URL. Review checks accuracy, originality and usefulness; follower count is not a requirement.'},
+ {id:'29d68d32-6793-48e1-9ced-440a64ec1023',title:'Share your boss strategy',description:'Publish your own Toxic Sewers gameplay with a practical tip for avoiding the Garbage King’s attacks. Include a game link and disclose participation in a rewarded quest. Submit the public URL. Original footage and a useful explanation are required; reposts of another player’s work are rejected.'}
+];

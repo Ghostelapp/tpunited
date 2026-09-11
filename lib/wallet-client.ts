@@ -1,0 +1,15 @@
+'use client';
+import {toHex,type Address,type EIP1193Provider} from 'viem';
+import type {Registry} from '@/packages/blockchain/config';
+export let activeProvider:EIP1193Provider|null=null;
+export let activeAccount:Address|null=null;
+export let activeChain:number|null=null;
+let cleanup=()=>{};
+export function emitWallet(){window.dispatchEvent(new Event('tpu-wallet'))}
+export function attachProvider(provider:EIP1193Provider){cleanup();activeProvider=provider;const accounts=(value:unknown)=>{activeAccount=(value as Address[])[0]??null;emitWallet()};const chain=(value:unknown)=>{activeChain=Number(value);emitWallet()};const disconnect=()=>{activeAccount=null;activeChain=null;emitWallet()};provider.on?.('accountsChanged',accounts);provider.on?.('chainChanged',chain);provider.on?.('disconnect',disconnect);cleanup=()=>{provider.removeListener?.('accountsChanged',accounts);provider.removeListener?.('chainChanged',chain);provider.removeListener?.('disconnect',disconnect)};return {accounts,chain};}
+export function detachProvider(){cleanup();cleanup=()=>{};activeProvider=null;activeAccount=null;activeChain=null;emitWallet()}
+export async function readProvider(){const p=activeProvider;if(!p)return;const [accounts,chain]=await Promise.all([p.request({method:'eth_accounts'}),p.request({method:'eth_chainId'})]);if(p!==activeProvider)return;activeAccount=accounts[0]??null;activeChain=Number(chain);emitWallet()}
+export async function switchNetwork(c:Registry){const p=activeProvider;if(!p)throw Error('Connect a wallet first.');try{await p.request({method:'wallet_switchEthereumChain',params:[{chainId:toHex(c.chainId)}]})}catch(e){if((e as {code?:number}).code!==4902)throw e;await p.request({method:'wallet_addEthereumChain',params:[{chainId:toHex(c.chainId),chainName:c.network,nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18},rpcUrls:c.rpcUrls,blockExplorerUrls:[c.explorer]}]})}await readProvider()}
+// Recheck authoritative session and the provider immediately before each Web3 operation.
+export async function requireWallet(c:Registry){const p=activeProvider;if(!p)throw Error('Connect your wallet first.');const response=await fetch('/api/auth/me',{cache:'no-store'});const d=await response.json() as {authenticated:boolean;networkVerified:boolean;user?:{wallet:{address:string}};error?:string};if(!response.ok||!d.authenticated||!d.user)throw Error(d.error||'Sign in with your wallet first.');if(!d.networkVerified)throw Error('Sign in again to verify this network.');await readProvider();if(p!==activeProvider||activeAccount?.toLowerCase()!==d.user.wallet.address.toLowerCase())throw Error('Wallet changed. Connect the wallet belonging to your signed-in account.');if(activeChain!==c.chainId)throw Error(`Switch your wallet to ${c.network}.`);return {provider:p,account:activeAccount!};}
+export function walletError(e:unknown){const x=e as {code?:number;shortMessage?:string;message?:string};if(x.code===4001)return 'Request declined in your wallet. You can try again.';return x.shortMessage||x.message||'Wallet request failed. Please try again.'}

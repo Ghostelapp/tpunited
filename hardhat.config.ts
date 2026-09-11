@@ -1,0 +1,2 @@
+import {defineConfig} from 'hardhat/config';
+export default defineConfig({solidity:{version:'0.8.36',settings:{optimizer:{enabled:true,runs:200},evmVersion:'cancun'}},paths:{sources:'./packages/contracts/src',tests:'./packages/contracts/test',artifacts:'./packages/contracts/hardhat-artifacts',cache:'./packages/contracts/cache'},networks:{local:{type:'edr-simulated',chainType:'l1',chainId:31337,hardfork:'cancun'}}});

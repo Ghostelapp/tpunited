@@ -1,0 +1,9 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "deployedAt": null,
+  "deployer": null,
+  "version": "0.1.0",
+  "contracts": {},
+  "configured": false
+}

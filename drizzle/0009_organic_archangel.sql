@@ -1,0 +1,1 @@
+CREATE INDEX `players_updated_idx` ON `players` (`updated_at`);
