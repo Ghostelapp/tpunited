@@ -45,17 +45,11 @@ next-env.d.ts
 /outputs/
 /work/
 !/.env.example
-!/.env.development
-!/.env.testnet
-!/.env.production
 /packages/contracts/cache/
 /packages/contracts/hardhat-artifacts/
 *.tsbuildinfo
 
 !.env.example
-!.env.development
-!.env.testnet
-!.env.production
 /packages/contracts/cache/
 /packages/contracts/hardhat-artifacts/
 *.tsbuildinfo
@@ -64,3 +58,12 @@ playwright-report/
 test-results/
 
 sessions.json
+.env.*
+!.env.example
+!.env.*.example
+.dev.vars*
+*.key
+*.p12
+*.pfx
+*.sqlite*
+*.db
