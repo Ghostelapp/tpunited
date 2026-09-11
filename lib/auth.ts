@@ -13,11 +13,18 @@ export type AuthUser={id:string;username:string;role:string;status:string;wallet
 type Session={hash:string;user_id:string|null;wallet:Address;chain_id:number;expires_at:number;created_at:number};
 export function randomToken(){return Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('')}
 export async function digest(value:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),v=>v.toString(16).padStart(2,'0')).join('')}
-function cookieName(kind:string,secure:boolean){return `${secure?'__Host-':''}tpu_${kind}`}
-function readCookie(req:Request,kind:string){return (req.headers.get('cookie')??'').split(';').map(v=>v.trim()).find(v=>v.startsWith(cookieName(kind,secureRequest(req))+'='))?.split('=')[1]??''}
+function sharedDomain(req:Request,kind:string){
+ const env=runtimeEnv(),u=new URL(req.url),domain=env.AUTH_COOKIE_DOMAIN;
+ const allowed=(env.AUTH_ORIGINS??'').split(',').map(v=>v.trim()).filter(Boolean);
+ if(kind!=='session'||u.protocol!=='https:'||!domain||!allowed.includes(u.origin))return '';
+ if(domain!=='tpunited.xyz'||!['tpunited.xyz','game.tpunited.xyz'].includes(u.hostname))return '';
+ return domain;
+}
+function cookieName(req:Request,kind:string){return `${secureRequest(req)?sharedDomain(req,kind)?'__Secure-':'__Host-':''}tpu_${kind}`}
+function readCookie(req:Request,kind:string){return (req.headers.get('cookie')??'').split(';').map(v=>v.trim()).find(v=>v.startsWith(cookieName(req,kind)+'='))?.split('=')[1]??''}
 function secureRequest(req:Request){return new URL(req.url).protocol==='https:'}
-function setCookie(res:Response,req:Request,kind:string,value:string,ms:number){res.headers.append('Set-Cookie',`${cookieName(kind,secureRequest(req))}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0,Math.floor(ms/1000))}${secureRequest(req)?'; Secure':''}`)}
-function origin(req:Request){sameOrigin(req);const u=new URL(req.url),configured=runtimeEnv().AUTH_ORIGIN;if(configured&&configured!==u.origin)throw new HttpError('Login is not available on this domain.',403);if(u.protocol!=='https:'&&!['localhost','127.0.0.1','terminal.local'].includes(u.hostname))throw new HttpError('HTTPS is required.',403);return u}
+function setCookie(res:Response,req:Request,kind:string,value:string,ms:number){const domain=sharedDomain(req,kind);res.headers.append('Set-Cookie',`${cookieName(req,kind)}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0,Math.floor(ms/1000))}${secureRequest(req)?'; Secure':''}${domain?`; Domain=${domain}`:''}`)}
+function origin(req:Request){sameOrigin(req);const u=new URL(req.url),env=runtimeEnv(),allowed=(env.AUTH_ORIGINS??env.AUTH_ORIGIN??'').split(',').map(v=>v.trim()).filter(Boolean);if(allowed.length&&!allowed.includes(u.origin))throw new HttpError('Login is not available on this domain.',403);if(u.protocol!=='https:'&&!['localhost','127.0.0.1','terminal.local'].includes(u.hostname))throw new HttpError('HTTPS is required.',403);return u}
 export async function session(req:Request):Promise<Session|null>{const token=readCookie(req,'session');if(!/^[a-f0-9]{64}$/.test(token))return null;return db().prepare('SELECT * FROM auth_sessions WHERE hash=? AND expires_at>? AND created_at>?').bind(await digest(token),Date.now(),Date.now()-SESSION_MAX).first<Session>()}
 export async function currentUser(req:Request):Promise<AuthUser|null>{const s=await session(req);if(!s?.user_id)return null;const r=await db().prepare('SELECT r.user_id,r.username,r.role,r.status,w.address,w.chain_id FROM registrations r JOIN account_wallets w ON w.user_id=r.user_id WHERE r.user_id=? AND w.address=?').bind(s.user_id,s.wallet).first<{user_id:string;username:string;role:string;status:string;address:Address;chain_id:number}>();if(!r)return null;if(r.status==='banned')throw new HttpError('Your account is suspended.',403);if(r.status!=='active')return null;return {id:r.user_id,username:r.username,role:r.role,status:r.status,wallet:{address:r.address,chainId:r.chain_id}}}
 export async function requireUser(req:Request){const u=await currentUser(req);if(!u)throw new HttpError('Sign in with your wallet to continue.',401);return u}

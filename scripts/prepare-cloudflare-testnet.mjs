@@ -4,9 +4,10 @@ const source='dist/server/wrangler.json';
 if(!fs.existsSync(source))throw Error('Run npm run build first.');
 const c=JSON.parse(fs.readFileSync(source,'utf8'));
 c.name='trash-panda-united';c.workers_dev=true;
+c.routes=[{pattern:'tpunited.xyz',custom_domain:true},{pattern:'game.tpunited.xyz',custom_domain:true}];
 c.d1_databases=[{binding:'DB',database_name:'trash-panda-testnet',database_id:'c8d649c0-0494-4f05-812f-a56c3361efa5',migrations_dir:'../../drizzle'}];
 c.r2_buckets=[{binding:'BUCKET',bucket_name:'tpu'}];
-c.vars={BLOCKCHAIN_NETWORK:'base-sepolia',TOKEN_ENABLED:'false'};
+c.vars={BLOCKCHAIN_NETWORK:'base-sepolia',TOKEN_ENABLED:'false',AUTH_ORIGINS:'https://tpunited.xyz,https://game.tpunited.xyz',AUTH_COOKIE_DOMAIN:'tpunited.xyz'};
 const file='deployments/test-token-base-sepolia.json';
 if(fs.existsSync(file)){
  const d=JSON.parse(fs.readFileSync(file,'utf8'));
