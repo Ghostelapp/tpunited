@@ -56,3 +56,6 @@ export const legacyVisits=sqliteTable('legacy_visits',{visitor:text('visitor').n
 
 export const socialAccounts=sqliteTable('social_accounts',{userId:text('user_id').notNull().references(()=>registrations.userId),provider:text('provider').notNull(),externalId:text('external_id').notNull(),displayName:text('display_name').notNull(),verifiedAt:integer('verified_at').notNull()},t=>[primaryKey({columns:[t.userId,t.provider]}),uniqueIndex('social_external_once').on(t.provider,t.externalId)]);
 export const socialOauthStates=sqliteTable('social_oauth_states',{hash:text('hash').primaryKey(),userId:text('user_id').notNull().references(()=>registrations.userId),sessionHash:text('session_hash').notNull(),campaignId:text('campaign_id').notNull().references(()=>campaigns.id),origin:text('origin').notNull(),expiresAt:integer('expires_at').notNull()},t=>[index('social_oauth_expiry').on(t.expiresAt)]);
+
+export const realtimeWorld=sqliteTable('realtime_world',{id:text('id').primaryKey(),monsters:text('monsters').notNull(),revision:integer('revision').notNull().default(0),updatedAt:integer('updated_at').notNull()});
+export const realtimeCommitGuard=sqliteTable('realtime_commit_guard',{id:integer('id').primaryKey(),ok:integer('ok').notNull()},t=>[check('realtime_guard_singleton',sql`${t.id} = 1`),check('realtime_guard_valid',sql`${t.ok} = 1`)]);

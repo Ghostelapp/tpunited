@@ -19,7 +19,8 @@ export type NftGear={id:string;tokenId:number;name:string;image:string;slot:Gear
 export type GameState={stamina?:number;energy?:number;dodgeUntil?:number;lastDodge?:number;strike?:{at:number;dx:number;dy:number;kind:WeaponKind;damage:number;target?:number};hits?:{x:number;y:number;amount:number}[];legacy?:LegacyProgress;bandages?:number;bandage?:{until:number;remaining:number;credit:number};healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number;hits?:number;deaths?:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
 export function initialState():GameState{return {...WORLD.spawn,townLayout:2,weaponLevel:0,salvageQuest:'available',bountyQuest:'available',bountyKills:0,hp:100,xp:0,scrap:0,circuits:0,medkits:2,kills:0,quest:'available',questKills:0,lastAttack:0,lastDamage:0,events:[],buildings:[],monsters:Array.from({length:8},(_,i)=>({id:i,kind:(i<4?'slime':i<6?'rat':'bug') as 'slime'|'rat'|'bug',x:1930+(i%3)*130,y:480+Math.floor(i/3)*230,hp:i<4?60:i<6?40:100,respawn:0}))}}
 export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage'|'dodge'|'legacy_claim'|'legacy_pin'|'legacy_title';dx?:number;dy?:number;target?:string};
-function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number):GameState {
+export type AdvanceOptions={monsterIds?:ReadonlySet<number>};
+function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:AdvanceOptions={}):GameState {
  const next=migrateTown(s);next.events=[];delete next.hitFeedback;delete next.hits;next.daily=dailyFor(s,now);const dt=Math.max(0,Math.min(elapsed,1000))/1000;
  if(['attack','dodge','enter','exit','dungeon_enter'].includes(a.type)&&next.healing){delete next.healing;next.events.push('Medkit interrupted · item kept.');}
  if(a.type==='attack'||a.type==='dodge')next.restSince=now;
@@ -49,6 +50,7 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number):GameState 
  }
  if(a.type==='move')Object.assign(next,movePosition(next,{dx:a.dx??0,dy:a.dy??0,ms:dt*1000},next.interior));
  for(const m of activeMonsters(next)){
+ if(options.monsterIds&&!options.monsterIds.has(m.id))continue;
  m.kind??=m.id<4?'slime':m.id<6?'rat':'bug';const home=monsterHome(m.id);
  if(m.hp<=0){if(next.interior!==11&&now>=m.respawn){m.hp=m.kind==='bug'?100:m.kind==='rat'?40:60;Object.assign(m,home);m.mode='patrol';}continue;}
  const toPlayer=next.interior===undefined&&next.x<1740?Infinity:Math.hypot(m.x-next.x,m.y-next.y),fromHome=Math.hypot(m.x-home.x,m.y-home.y);
@@ -246,8 +248,8 @@ export function legacyFor(s:GameState):LegacyProgress{return s.legacy??{species:
 export function legacyCount(s:GameState,id:string){const q=LEGACY.find(q=>q.id===id),l=legacyFor(s);if(!q)return 0;switch(q.metric){case 'kills':return s.kills;case 'module':return Object.values(l.modules).some(v=>v>0)?1:0;case 'modules':return ['workshop','warehouse','garden'].reduce((n,k)=>n+Math.min(3,l.modules[k]??0),0);default:{const v=l[q.metric];return Array.isArray(v)?v.length:typeof v==='boolean'?Number(v):v;}}}
 export function legacyTitle(s:GameState){const l=legacyFor(s);return l.title&&l.claimed[l.title]!==undefined?LEGACY.find(q=>q.id===l.title)?.title:undefined}
 export function unlockLegacy(s:GameState,now:number){s.legacy??=legacyFor(s);for(const q of LEGACY)if(legacyCount(s,q.id)>=q.goal&&s.legacy.unlocked[q.id]===undefined){s.legacy.unlocked[q.id]=now;s.events.push(`PANDA LEGACY · ${q.name} unlocked`);}}
-export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameState{
- const next=advanceWorld(s,a,elapsed,now);const gained=playerStats(next).hp-playerStats(s).hp;if(gained>0){next.hp=Math.min(playerStats(next).hp,next.hp+gained);next.events.push(`LEVEL UP · Level ${playerStats(next).level} · +${gained} max HP`);}next.legacy??=legacyFor(next);const l=next.legacy;
+export function advance(s:GameState,a:Intent,elapsed:number,now:number,options:AdvanceOptions={}):GameState{
+ const next=advanceWorld(s,a,elapsed,now,options);const gained=playerStats(next).hp-playerStats(s).hp;if(gained>0){next.hp=Math.min(playerStats(next).hp,next.hp+gained);next.events.push(`LEVEL UP · Level ${playerStats(next).level} · +${gained} max HP`);}next.legacy??=legacyFor(next);const l=next.legacy;
  const add=<T,>(items:T[],value:T)=>{if(!items.includes(value))items.push(value)};
  if(next.interior!==undefined)add(l.rooms,next.interior);
  if(a.type==='cache'&&next.daily?.caches.includes(a.target??'')&&!dailyFor(s,now).caches.includes(a.target??''))add(l.caches,a.target!);

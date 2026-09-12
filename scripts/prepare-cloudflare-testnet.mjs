@@ -4,6 +4,7 @@ const source='dist/server/wrangler.json';
 if(!fs.existsSync(source))throw Error('Run npm run build first.');
 const c=JSON.parse(fs.readFileSync(source,'utf8'));
 c.name='trash-panda-united';c.workers_dev=true;
+c.services=[...(c.services??[]).filter(s=>s.binding!=='REALTIME'),{binding:'REALTIME',service:'trash-panda-realtime'}];
 c.routes=[{pattern:'tpunited.xyz',custom_domain:true},{pattern:'game.tpunited.xyz',custom_domain:true}];
 c.d1_databases=[{binding:'DB',database_name:'trash-panda-testnet',database_id:'c8d649c0-0494-4f05-812f-a56c3361efa5',migrations_dir:'../../drizzle'}];
 c.r2_buckets=[{binding:'BUCKET',bucket_name:'tpu'}];

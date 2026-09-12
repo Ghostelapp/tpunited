@@ -43,6 +43,9 @@
   ],
   "exclude": [
     "node_modules",
-    "examples"
+    "examples",
+    "patch",
+    "dist",
+    ".realtime-build"
   ]
 }

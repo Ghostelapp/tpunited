@@ -15,6 +15,7 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 
 const localBindingConfig = {
   main: "vinext/server/fetch-handler",
+  services: [{binding:"REALTIME",service:"trash-panda-realtime"}],
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
