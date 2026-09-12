@@ -1,0 +1,87 @@
+{
+  "version": "0.1",
+  "date": "12 September 2026",
+  "edition": "TESTNET FIELD GUIDE",
+  "title": "Trash Panda United",
+  "tagline": "A broken world. A fresh start.",
+  "intro": "Scavenge the outskirts. Bring something useful home. Turn a small corner of the wasteland into a place worth coming back to.",
+  "summary": "Trash Panda United is a browser-based pixel-cyberpunk RPG in development, combining exploration, instanced combat, crafting and player parcels with a Base-oriented ownership layer. The testnet phase is where players help shape the game, test its economy and compete under published seasonal rules.",
+  "chapters": [
+    {
+      "id": "world", "number": "01", "title": "Small panda. Big world.", "eyebrow": "THE GAME / CURRENT ALPHA", "lead": "Trash Town is a starting point: a place to recover, meet other scavengers and prepare for the next trip beyond the neon.",
+      "blocks": [
+        {"title": "A game worth returning to", "text": "The project is built around a repeatable adventure: leave the safety of town, take on a task, recover resources and use them to improve your next run. Progress should come from learning the world and making useful choices. Blockchain ownership supports selected assets; it does not replace the moment-to-moment game."},
+        {"title": "What the alpha contains", "text": "The codebase includes Trash Town, NPC services and interiors, mutant enemies, the Toxic Sewers solo dungeon and the Garbage King boss. Players can complete quests and daily contracts, search salvage caches, collect equipment, craft medkits and upgrade their starter blade. Keyboard, click-to-walk and touch controls are supported."},
+        {"title": "Social presence, honest scope", "text": "Players can see other characters, use town chat and visit accessible player parcels. Parcel chat has its own access checks. Combat and monsters are currently instanced per player. Seeing another player does not mean you share their enemies, damage or dungeon progress. Party combat, guilds and shared expeditions remain future work."}
+      ],
+      "callout": "The wider regional atlas is a direction for expansion. It is not a claim that every region is already playable.",
+      "visual": "world"
+    },
+    {
+      "id": "progression", "number": "02", "title": "Bring something back.", "eyebrow": "THE PROGRESSION LOOP", "lead": "Every expedition should create a decision: spend now, prepare for a harder challenge or invest in your home.",
+      "blocks": [
+        {"title": "Explore and earn", "text": "Quest rewards, defeated enemies and salvage caches supply Scrap, circuits, experience and ordinary loot. Equipment changes damage or armor. Services in town turn resources into healing supplies and upgrades. Ordinary dropped gear is game inventory; it is not automatically minted as an NFT."},
+        {"title": "Combat and healing / planned", "text": "The next design direction adds directional attacks, clearer hit feedback, distinct weapon behavior and a stamina-based dodge. Healing would become a tactical choice with visible use times, interruption rules and cooldowns. These systems are proposals for playtesting; current item names do not imply that each weapon already has a distinct attack model."},
+        {"title": "Panda Legacy / planned", "text": "A proposed achievement journal would cover combat, mastery, exploration, crafting, parcels and community milestones. Tiered goals, progress bars and three tracked objectives would make progress visible. Proposed rewards include titles, badges, decorations and limited one-time resource rewards. Achievement points would remain separate from seasonal points, and rewards would be checked and claimed once on the server."}
+      ],
+      "callout": "Mastery should matter: a difficult boss challenge should feel different from repeating an easy action hundreds of times.",
+      "visual": "loop"
+    },
+    {
+      "id": "economy", "number": "03", "title": "Nothing goes to waste.", "eyebrow": "ECONOMY / FOUR DISTINCT LAYERS", "lead": "Resources, ranking points and ownership records serve different purposes. They should never be presented as interchangeable balances.",
+      "blocks": [
+        {"title": "Sources and spending", "text": "Combat, quests and caches introduce resources. Crafting, healing, upgrades and Homestead development give players reasons to spend them. Testnet balancing should compare how quickly resources enter the game with how useful these spending choices remain, especially as experienced players become stronger."},
+        {"title": "What remains undecided", "text": "This edition does not establish a project-token supply, ticker, allocation, vesting schedule, sale price or conversion rate. It does not define revenue sharing or staking returns. Any future token design would require its own published utility, distribution rules and review before being introduced."}
+      ],
+      "table": {"headers": ["Layer", "Purpose", "Boundary"], "rows": [["Scrap + circuits", "Crafting and in-game progression", "Server-held resources; no cash-out mechanism is defined here."], ["Season points", "Rank eligible testnet activity", "Not a transferable token or an automatic payment claim."], ["LAND + item NFTs", "Record ownership of supported assets", "Utility depends on supported contracts and game rules."], ["Testnet assets", "Exercise wallet and contract flows", "Not mainnet assets; no automatic migration is promised."]]},
+      "callout": "A healthy loop needs useful things to spend resources on, not only more ways to earn them.",
+      "visual": "economy"
+    },
+    {
+      "id": "ownership", "number": "04", "title": "Build your corner.", "eyebrow": "PARCELS / COLLECTIBLES / BASE", "lead": "A parcel is a persistent home for a scavenger: somewhere to build, decorate and welcome other players.",
+      "blocks": [
+        {"title": "Parcels and Homestead", "text": "The implementation connects LAND ownership to parcel access and owner-controlled building actions. Homestead includes workshop, warehouse and garden modules. Supported decorations can be placed on the parcel. Public, private and invited-visitor modes let owners choose access; shared visits and parcel chat add a social use for the space."},
+        {"title": "NFT equipment", "text": "The armory implementation supports unique ERC-721 weapon and armor entries. An authorized wallet mints them; players import supported items after ownership verification. Equipped items can apply server-validated bonuses and level requirements. A transfer removes the previous owner's entitlement to that bonus. Ordinary loot and imported NFTs remain distinct."},
+        {"title": "Ownership has a defined boundary", "text": "An NFT records control of a token, not ownership of the game company or a promise of uninterrupted services. In-game utility, metadata hosting and supported collections depend on project infrastructure and rules. Administrators can disable an item's game utility without removing the NFT from its holder's wallet."},
+        {"title": "Testnet before mainnet", "text": "The integration targets Base Sepolia for testing, with a Base mainnet configuration path. Land sales, trading and collections require deployed, configured contracts. A website deployment alone does not deploy them. This edition does not attest that every contract flow has been completed on the public testnet."}
+      ],
+      "callout": "Trading support is part of the architecture. Liquidity, buyers and resale prices are not guaranteed features of an asset.",
+      "visual": "gear"
+    },
+    {
+      "id": "season", "number": "05", "title": "Make your season count.", "eyebrow": "TESTNET / LEADERBOARD / PARTICIPATION", "lead": "The testnet is a proving ground for gameplay, reliability and fair progression. Published season rules determine what counts.",
+      "blocks": [
+        {"title": "How a season works", "text": "An administrator prepares a season, reviews its scoring rules and starts it with those rules locked. The implementation awards points from approved server events, with daily caps and eligibility thresholds. Seasons do not start automatically when the website is published. Read the active season page for its actual dates, scoring and requirements."},
+        {"title": "Meaningful activity", "text": "Supported scoring sources include claimed daily rewards, collected caches, completed dungeons and approved social tasks. Opening a link alone does not prove completion. Current administration tools support exclusions, recorded reasons and frozen final results. Stronger bot and multi-account detection still needs development; one wallet does not prove one person."},
+        {"title": "Airdrop direction", "text": "The project intends testnet participation to inform a potential mainnet-era airdrop. The token, budget, distribution dates, final eligibility and payment mechanism are not fixed by this litepaper. Leaderboard points and any displayed illustrative share are not a guarantee of tokens or value. A reviewed results export is a step toward distribution, not distribution itself."}
+      ],
+      "callout": "Testnet progress may be reset or rebalanced. If changes affect a season, players need clear communication about what is preserved and what is restarted.",
+      "visual": "season"
+    },
+    {
+      "id": "trust", "number": "06", "title": "Trust the boundaries.", "eyebrow": "ACCOUNTS / AUTHORITY / OPERATIONS", "lead": "The browser should feel responsive while the server decides whether progression and rewards are valid.",
+      "blocks": [
+        {"title": "One game identity", "text": "Wallet-based sign-in uses a signed challenge and a server session. The landing and game share the account flow. Signing in and sending an on-chain transaction are separate actions. The game does not need a player's seed phrase or private key to establish identity."},
+        {"title": "Who decides what", "text": "For town and dungeon play, the server validates movement, combat actions, resource changes and rewards. The chain establishes ownership of supported NFTs. Parcel visitor positions are cosmetic presence, not proof of movement or task completion. The project is not a fully on-chain game, and current social multiplayer is not shared authoritative combat."},
+        {"title": "Operator responsibilities", "text": "Application administrators manage content, support, seasons and game configuration. Contract permissions are separate from website roles. The armory includes authorized minting and game-utility controls. Players depend on hosted APIs, data storage, metadata availability and RPC services as well as the contracts themselves."},
+        {"title": "Before a mainnet launch", "text": "Independent security review, production anti-abuse controls, load tests, recovery exercises and end-to-end wallet testing remain release gates. This document makes no independent-audit claim. Authentication tests and local contract tests are useful evidence, but they do not establish that the whole deployed system is secure."}
+      ],
+      "callout": "Report reproducible issues through in-game support. Include the action, expected result and actual result; keep wallet secrets out of reports.",
+      "visual": "trust"
+    },
+    {
+      "id": "roadmap", "number": "07", "title": "One scrap at a time.", "eyebrow": "ROADMAP / MILESTONES OVER DATES", "lead": "The next release should make the existing world better before making it larger.",
+      "blocks": [
+        {"title": "01 / Strengthen the alpha", "text": "Current focus: playtest the core loop, validate mobile controls and readability, exercise shared visits and improve reliability. Measure what confuses players, where progression stalls and which actions feel rewarding."},
+        {"title": "02 / Add depth", "text": "Planned: improved combat and healing, the Panda Legacy achievement journal and richer progression choices. Balance resource rewards, spending and equipment strength through testnet feedback."},
+        {"title": "03 / Prove the systems", "text": "Planned: run complete seasons, review abuse patterns, rehearse final-result exports and test configured ownership and trading flows with separate wallets. Extend security, recovery and load testing."},
+        {"title": "04 / Earn the expansion", "text": "Future direction: party play, guilds, shared expeditions and additional regions. Mainnet readiness depends on reviewed contracts, economic rules and operational controls. Dates and rewards will be announced separately when their prerequisites are met."}
+      ],
+      "callout": "Join the testnet to help build a better wasteland: play, report, compare notes and return for the next iteration.",
+      "visual": "roadmap"
+    }
+  ],
+  "statusNote": "CURRENT ALPHA describes implemented code, not a certification of every live deployment. PLANNED marks design direction rather than a shipped feature. Reviewed against project documentation and source on 12 September 2026.",
+  "sourceNote": "Source basis: project README; leaderboard, NFT armory, shared-parcel and security guides; blockchain configuration; current game implementation. Older documentation was interpreted alongside later feature updates. Baseline: 6a517d5. No independent security audit or live-contract certification was performed for this edition.",
+  "links": [{"label": "Landing", "url": "https://tpunited.xyz"}, {"label": "Play", "url": "https://game.tpunited.xyz"}, {"label": "Season rules", "url": "https://tpunited.xyz/program"}, {"label": "Leaderboard", "url": "https://tpunited.xyz/leaderboard"}, {"label": "Support", "url": "https://tpunited.xyz/support"}]
+}
