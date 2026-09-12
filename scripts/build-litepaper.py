@@ -1,5 +1,7 @@
 """Build the eight-page project litepaper from the shared editorial source."""
-import json, math, random, re, base64, io
+import json, math, re, base64, io
+from functools import lru_cache
+from PIL import Image
 from pathlib import Path
 from xml.sax.saxutils import escape
 from reportlab.pdfgen import canvas
@@ -56,33 +58,37 @@ def arrow(x,y,x2,y2):
  a=math.atan2(y2-y,x2-x)
  for da in [-.55,.55]:line(x2,y2,x2-7*math.cos(a+da),y2-7*math.sin(a+da),LIME,1.2)
 
-def skyline(y=440,h=260):
- rng=random.Random(17)
- rect(0,y,W,h,'#0c1d28')
- for layer in range(3):
-  x=-10
-  while x<W:
-   bw=rng.randrange(30,65);bh=rng.randrange(45,160)+layer*10;by=y+h-bh
-   color=['#17333e','#10252f','#07141c'][layer]
-   rect(x,by,bw,bh,color)
-   rect(x+8,by-8,bw-17,8,color)
-   if rng.random()<.5:line(x+bw/2,by,x+bw/2,by-25,LINE)
-   for wx in range(int(x+8),int(x+bw-6),10):
-    for wy in range(int(by+15),int(y+h-6),15):
-     if rng.random()<.35:rect(wx,wy,3,6,rng.choice(['#285d64','#3b5760','#548269',CYAN]))
-   if layer==2 and x>0 and rng.random()<.4:
-    rect(x+2,by+22,bw-4,18,PINK);txt('OPEN',x+7,by+26,7,'Mono',BG)
-   x+=bw+5
- for i in range(8):line(0,y+h-i*3,W,y+h-i*3,'#122b35')
- line(0,y+h,W,y+h,CYAN,2)
+@lru_cache
+def atlas_asset(sheet,box):
+ # Extract the same atlas rectangles used by the game; retain original colors and alpha.
+ image=Image.open(ROOT/'public/assets'/f'sheet-{sheet}.webp')
+ x,y,w,h=box
+ return ImageReader(image.crop((x,y,x+w,y+h)))
+def sprite(sheet,box,x,y,w,h):
+ image=atlas_asset(sheet,box);iw,ih=image.getSize();scale=min(w/iw,h/ih)
+ C.drawImage(image,x+(w-iw*scale)/2,H-y-ih*scale,width=iw*scale,height=ih*scale,mask='auto')
+def equipment(asset,x,y,w,h):
+ svg=(ROOT/'public/assets/equipment'/f'{asset}.svg').read_text()
+ image=ImageReader(io.BytesIO(base64.b64decode(re.search(r'data:image/png;base64,([^\"]+)',svg).group(1))))
+ iw,ih=image.getSize();scale=min(w/iw,h/ih)
+ C.drawImage(image,x+(w-iw*scale)/2,H-y-ih*scale,width=iw*scale,height=ih*scale,mask='auto')
+def city_banner(y,h):
+ image=Image.open(ROOT/'public/assets/city.png').convert('RGB')
+ image.thumbnail((1200,800))
+ encoded=io.BytesIO();image.save(encoded,format='JPEG',quality=88)
+ iw,ih=image.size;scale=W/iw
+ C.saveState();path=C.beginPath();path.rect(0,H-y-h,W,h);C.clipPath(path,stroke=0)
+ C.drawImage(ImageReader(encoded),0,H-y-h-(ih*scale-h)/2,width=W,height=ih*scale)
+ C.restoreState();line(0,y+h,W,y+h,CYAN)
 
 # Cover.
 base(1,'Welcome to the wasteland')
 pill('TESTNET FIELD GUIDE',44,83)
 txt('TRASH',40,129,66,'Bold');txt('PANDA',40,197,66,'Bold');txt('UNITED',40,265,66,'Bold',PINK)
-rect(449,137,101,101,PANEL,LINE);txt('T',470,141,75,'Bold',LIME);rect(460,224,79,4,PINK)
+sprite(1,(15,204,115,155),421,151,133,184)
+txt('PANDA SCAVENGER',422,344,7,'Mono',CYAN)
 txt('A BROKEN WORLD.',44,357,16,'Mono',WHITE);txt('A FRESH START.',44,380,16,'Mono',LIME)
-skyline(430,217)
+city_banner(426,224)
 rect(44,609,229,29,LIME);txt('SCAVENGE / BUILD / BELONG',54,618,9,'Mono',BG)
 para(D['intro'],44,670,487,13,WHITE,19)
 txt('V0.1 / 12 SEP 2026 / BASE SEPOLIA',44,749,9,'Mono',CYAN)
@@ -95,20 +101,23 @@ for n,ch in enumerate(D['chapters'],2):
  if kind=='world':
   para(D['statusNote'],44,218,507,7.3,MUTED,10)
   rect(44,258,507,143,PANEL,LINE)
-  # Abstract route map: game locations, not a claim of geographic scale.
-  nodes=[(84,299,'TOWN',LIME),(268,299,'OUTSKIRTS',CYAN),(448,299,'SEWERS',PINK)]
-  for a,b in zip(nodes,nodes[1:]):arrow(a[0]+28,a[1],b[0]-28,b[1])
-  for x,y,label,col in nodes:
-   rect(x-12,y-12,24,24,BG,col);rect(x-4,y-4,8,8,col);txt(label,x-28,y+23,8,'Mono',col)
-  txt('NPC SERVICES',62,373,7.5,'Mono',MUTED);txt('SALVAGE + ENEMIES',218,373,7.5,'Mono',MUTED);txt('SOLO BOSS RUN',409,373,7.5,'Mono',MUTED)
+  sprite(1,(15,204,115,155),73,267,108,100)
+  sprite(4,(302,102,309,340),241,266,112,101)
+  sprite(2,(14,987,278,211),403,273,127,94)
+  txt('THE SCAVENGER',80,380,8,'Mono',LIME);txt('SCRAP HOUSE',264,380,8,'Mono',CYAN);txt('GARBAGE KING',415,380,8,'Mono',PINK)
   block(ch['blocks'][0],44,426);block(ch['blocks'][1],307,426)
   block(ch['blocks'][2],44,603,507,10.2);callout(ch['callout'])
  elif kind=='loop':
   labels=['EXPLORE','FIGHT','SALVAGE','UPGRADE','RETURN']
   for i,label in enumerate(labels):
-   x=44+i*104;rect(x,270,91,79,PANEL,LINE);txt('0'+str(i+1),x+10,280,20,'Mono',LIME);txt(label,x+9,319,8,'Mono',WHITE)
-   if i<4:arrow(x+93,309,x+101,309)
-  txt('REINVEST IN YOUR NEXT RUN',44,371,8.5,'Mono',CYAN)
+   x=44+i*104;rect(x,262,91,118,PANEL,LINE);txt('0'+str(i+1),x+8,270,9,'Mono',LIME);txt(label,x+9,360,8,'Mono',WHITE)
+   if i==0:sprite(1,(15,204,115,155),x+15,286,61,66)
+   elif i==1:sprite(2,(282,47,146,94),x+9,293,73,54)
+   elif i==2:equipment('neon-blaster',x+10,287,71,62)
+   elif i==3:equipment('scavenger-hood',x+12,287,68,62)
+   else:sprite(4,(302,102,309,340),x+12,286,68,66)
+   if i<4:arrow(x+93,320,x+101,320)
+  txt('REINVEST IN YOUR NEXT RUN',44,395,8.5,'Mono',CYAN)
   block(ch['blocks'][0],44,420,507,10.5)
   block(ch['blocks'][1],44,545);block(ch['blocks'][2],307,545)
   callout(ch['callout'])
@@ -122,15 +131,10 @@ for n,ch in enumerate(D['chapters'],2):
   block(ch['blocks'][0],44,532);block(ch['blocks'][1],307,532);callout(ch['callout'])
  elif kind=='gear':
   rect(44,252,507,137,PANEL,LINE)
-  for name,x,label in [('blaster',67,'NEON BLASTER'),('hood',256,'SCAVENGER HOOD')]:
-   asset='neon-blaster' if name=='blaster' else 'scavenger-hood'
-   svg=(ROOT/'public/assets/equipment'/f'{asset}.svg').read_text()
-   image=ImageReader(io.BytesIO(base64.b64decode(re.search(r'data:image/png;base64,([^\"]+)',svg).group(1))))
-   iw,ih=image.getSize();scale=min(136/iw,104/ih)
-   C.drawImage(image,x,H-264-ih*scale,width=iw*scale,height=ih*scale,mask='auto')
-   txt(label,x,374,7,'Mono',CYAN)
-  txt('ARMORY',426,275,10,'Mono',LIME);txt('ARTWORK',426,293,10,'Mono',LIME)
-  para('From the current equipment collection.',426,320,104,8.3,MUTED,12)
+  sprite(4,(302,102,309,340),63,259,134,105)
+  equipment('neon-blaster',228,266,134,98)
+  equipment('scavenger-hood',400,259,125,105)
+  txt('SCRAP HOUSE',92,374,7,'Mono',LIME);txt('NEON BLASTER',251,374,7,'Mono',CYAN);txt('SCAVENGER HOOD',421,374,7,'Mono',CYAN)
   for i,b in enumerate(ch['blocks']):block(b,44+(i%2)*263,415+(i//2)*166,244,9.5)
   callout(ch['callout'])
  elif kind=='season':
