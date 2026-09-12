@@ -17,7 +17,7 @@
     "contracts:test": "node packages/contracts/compile.mjs && node packages/contracts/test/contracts.mjs",
     "contracts:deploy": "node packages/contracts/deploy.mjs",
     "contracts:verify": "node packages/contracts/verify.mjs",
-    "game:test": "node --import ./scripts/register-test-typescript.mjs --test packages/game-core/game.test.ts packages/game-core/world.test.mjs tests/healing.test.mjs tests/legacy-combat.test.mjs",
+    "game:test": "node --import ./scripts/register-test-typescript.mjs --test packages/game-core/game.test.ts packages/game-core/world.test.mjs tests/healing.test.mjs tests/legacy-combat.test.mjs tests/game-quality.test.mjs",
     "infra": "docker compose up -d",
     "indexer": "node apps/indexer/indexer.mjs",
     "auth:test": "node --test scripts/auth.test.mjs scripts/admin.test.mjs scripts/wallet-client.test.mjs",

@@ -6,10 +6,10 @@ import {advance,initialState,legacyCount,legacyTitle,NPCS,SEWER_DOOR,DUNGEON,new
 const now=100000;
 function arena(){const s=initialState();s.monsters=[{id:0,kind:'slime',x:s.x+60,y:s.y,hp:60,respawn:0}];return s}
 function strike(s,dx=1,dy=0,t=now){s=advance(s,{type:'attack',dx,dy},0,t);return s.strike?advance(s,{type:'tick'},0,s.strike.at):s}
-test('directional attack has a real windup and cannot hit behind the player',()=>{
+test('melee aim assistance selects a nearby target but still requires windup',()=>{
  let s=arena();s=advance(s,{type:'attack',dx:-1,dy:0},0,now);assert.equal(s.monsters[0].hp,60);assert.ok(s.strike);
- s=advance(s,{type:'tick'},0,now+130);assert.equal(s.monsters[0].hp,60);
- s=strike(s,1,0,now+1000);assert.equal(s.monsters[0].hp,35);
+ s=advance(s,{type:'tick'},0,now+130);assert.equal(s.monsters[0].hp,35);
+ s=strike(s,1,0,now+1000);assert.equal(s.monsters[0].hp,10);
 });
 test('hammer hits multiple targets; blaster spends energy and reaches farther',()=>{
  let s=arena();s.loot=[{id:'h',key:'king_blade'}];s.equipment={weapon:'h'};s.monsters.push({...s.monsters[0],id:1,y:s.y+20});
