@@ -21,7 +21,8 @@
     "infra": "docker compose up -d",
     "indexer": "node apps/indexer/indexer.mjs",
     "auth:test": "node --test scripts/auth.test.mjs scripts/admin.test.mjs scripts/wallet-client.test.mjs",
-    "auth:e2e": "playwright test"
+    "auth:e2e": "playwright test",
+    "social:test": "node --test tests/social-quests.test.mjs"
   },
   "dependencies": {
     "@base-org/account": "^2.5.10",
