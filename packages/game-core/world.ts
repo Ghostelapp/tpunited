@@ -15,11 +15,13 @@ export const NPCS=[{id:'scrappy',name:'Scrappy',x:1150,y:710,sx:205,sy:215,sw:76
 export const parcels=Array.from({length:100},(_,i)=>({id:i+1,regionId:0,x:60+(i%10)*40,y:80+Math.floor(i/10)*40,width:32,height:32,rarity:i%17===0?'EPIC':i%5===0?'RARE':'COMMON',buildingSlots:i%17===0?6:i%5===0?4:2,status:i>=80?'SYSTEM':i>=70?'RESERVED':'UNRELEASED'}));
 export type Monster={navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
 export type NftGear={id:string;tokenId:number;name:string;image:string;slot:GearSlot;rarity:"common"|"uncommon"|"rare"|"epic"|"legendary"|"mythic";damage:number;armor:number;minLevel:number};
-export type GameState={nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
+export type GameState={healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
 export function initialState():GameState{return {...WORLD.spawn,townLayout:2,weaponLevel:0,salvageQuest:'available',bountyQuest:'available',bountyKills:0,hp:100,xp:0,scrap:0,circuits:0,medkits:2,kills:0,quest:'available',questKills:0,lastAttack:0,lastDamage:0,events:[],buildings:[],monsters:Array.from({length:8},(_,i)=>({id:i,kind:(i<4?'slime':i<6?'rat':'bug') as 'slime'|'rat'|'bug',x:1930+(i%3)*130,y:480+Math.floor(i/3)*230,hp:i<4?60:i<6?40:100,respawn:0}))}}
 export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage';dx?:number;dy?:number;target?:string};
 export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameState {
  const next=migrateTown(s);next.events=[];delete next.hitFeedback;next.daily=dailyFor(s,now);const dt=Math.max(0,Math.min(elapsed,1000))/1000;
+ if(['attack','enter','exit','dungeon_enter'].includes(a.type)&&next.healing){delete next.healing;next.events.push('Medkit interrupted · item kept.');}
+ if(a.type==='attack')next.restSince=now;
  if(a.type==='dungeon_enter'){
  if(next.interior===undefined&&Math.hypot(next.x-SEWER_DOOR.x,next.y-SEWER_DOOR.y)<85){next.interior=11;if(!next.dungeon||next.dungeon.cleared)next.dungeon={monsters:newDungeonMonsters(),cleared:false,run:(next.dungeon?.run??0)+1};Object.assign(next,DUNGEON.spawn);next.events.push('Toxic Sewers · Defeat the Garbage King. Q uses a medkit.');}else next.events.push('Find the sewer hatch in the eastern outskirts.');return next;
  }
@@ -50,7 +52,7 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  else {const phase=(m.waypoint??m.id)%4,angle=phase*Math.PI/2+m.id*.73;target={x:home.x+Math.cos(angle)*65,y:home.y+Math.sin(angle)*65};if(Math.hypot(target.x-m.x,target.y-m.y)<12)m.waypoint=(m.waypoint??m.id)+1;}
  const speed=(m.kind==='boss'?38:m.kind==='rat'?90:m.kind==='bug'?48:52)*(m.mode==='patrol'?.45:1);
  if(m.kind==='boss'){
- if(m.slamAt&&now>=m.slamAt){if(Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
+ if(m.slamAt&&now>=m.slamAt){if(Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.lastDamage=now;next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
  else if(m.mode==='chase'&&!m.slamAt&&now-(m.lastSlam??0)>4500&&toPlayer<180)m.slamAt=now+1100;
  }
  if(!m.slamAt){
@@ -72,7 +74,24 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  if(a.type==='upgrade'){const lvl=next.weaponLevel??0,cost=75*(lvl+1),parts=5*(lvl+1);if(!nearService(next,'wrench',140))next.events.push('Visit Wrench to upgrade your blade.');else if(lvl>=3)next.events.push('Your blade is fully upgraded.');else if(next.scrap>=cost&&next.circuits>=parts){next.scrap-=cost;next.circuits-=parts;next.weaponLevel=lvl+1;next.events.push('Blade upgraded · +5 damage')}else next.events.push(`Needs ${cost} scrap + ${parts} circuits.`)}
  if(a.type==='salvage_quest'){if(!nearService(next,'wrench',140))next.events.push('Talk to Wrench at the workshop.');else if(!next.salvageQuest||next.salvageQuest==='available'){next.salvageQuest='active';next.events.push('Quest accepted: Spare Parts. Bring Wrench 6 circuits.')}else if(next.salvageQuest==='active'&&next.circuits>=6){next.circuits-=6;next.scrap+=75;next.xp+=70;next.salvageQuest='complete';next.events.push('Spare Parts complete · +75 scrap · +70 XP')}else next.events.push(next.salvageQuest==='complete'?'Wrench already has the parts.':'You need 6 circuits.')}
  if(a.type==='bounty_quest'){if(!nearService(next,'scrappy',130))next.events.push('Visit Scrappy in the town square.');else if(!next.bountyQuest||next.bountyQuest==='available'){next.bountyQuest='active';next.bountyKills=0;next.events.push('Bounty accepted: Rat Problem. Defeat 5 trash rats.')}else if(next.bountyQuest==='active'&&(next.bountyKills??0)>=5){next.bountyQuest='complete';next.scrap+=120;next.xp+=120;next.events.push('Rat Problem complete · +120 scrap · +120 XP')}else next.events.push(next.bountyQuest==='complete'?'This bounty has already been claimed.':`Trash rats defeated: ${next.bountyKills??0}/5`)}
- if(a.type==='heal'){if(next.medkits>0&&next.hp<100){next.medkits--;next.hp=Math.min(100,next.hp+50);next.events.push('Used medkit · +50 HP')}}
+ // Resolve incoming damage before any healing. A fatal hit cannot be rescued by a pending medkit.
+ if(next.lastDamage===now){if(next.healing)next.events.push('Medkit interrupted by damage · item kept.');delete next.healing;next.restSince=now;next.restCredit=0;}
+ if(next.healing&&now>=next.healing.readyAt){
+ if(next.hp>0&&next.hp<100&&next.medkits>0){next.medkits--;next.hp=Math.min(100,next.hp+50);next.healCooldownUntil=now+6000;next.events.push('Used medkit · up to 50 HP restored.');}
+ delete next.healing;
+ }
+ if(a.type==='heal'&&!next.healing&&next.hp>0&&next.hp<100&&next.medkits>0&&now>=(next.healCooldownUntil??0)){
+ next.healing={startedAt:now,readyAt:now+1500};next.events.push('Applying medkit · 1.5 seconds. Attacking or taking damage interrupts.');
+ }
+ const safe=next.interior===undefined?next.x<1740:next.interior!==11;
+ if(!safe||a.type==='attack'||next.lastDamage===now){next.restSince=now;next.restCredit=0;}
+ else {
+ next.restSince??=now;
+ if(now-Math.max(next.restSince,next.lastDamage,next.lastAttack)>=10000&&next.hp>0&&next.hp<100&&!next.healing){
+ next.restCredit=(next.restCredit??0)+dt*2;const restored=Math.floor(next.restCredit);next.hp=Math.min(100,next.hp+restored);next.restCredit-=restored;
+ }
+ }
+
  if(a.type==='cache'){
  const cache=CACHES.find(c=>c.id===a.target);
  if(next.interior!==undefined||!cache||Math.hypot(next.x-cache.x,next.y-cache.y)>85)next.events.push('Move closer to a salvage cache.');
@@ -84,7 +103,7 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  if(quest&&!next.daily.claimed.includes(quest.id)&&dailyCount(next.daily,quest.id)>=quest.goal){next.daily.claimed.push(quest.id);next.scrap+=quest.scrap;next.xp+=quest.xp;next.events.push(`Daily complete: ${quest.title} · +${quest.scrap} Scrap · +${quest.xp} XP`);}
  else next.events.push('Daily reward unavailable: finish the task or check if already claimed.');
  }
- if(next.hp<=0){delete next.interior;next.hp=100;next.x=WORLD.spawn.x;next.y=WORLD.spawn.y;next.scrap=Math.max(0,next.scrap-20);next.events.push('Rescued by the clinic. Up to 20 scrap lost.')}
+ if(next.hp<=0){delete next.healing;next.restSince=now;next.restCredit=0;delete next.interior;next.hp=100;next.x=WORLD.spawn.x;next.y=WORLD.spawn.y;next.scrap=Math.max(0,next.scrap-20);next.events.push('Rescued by the clinic. Up to 20 scrap lost.')}
  return next;
 }
 
@@ -176,3 +195,4 @@ export function findMonsterPath(start:{x:number;y:number},goal:{x:number;y:numbe
 }
 
 export function migrateTown(s:GameState):GameState{const next=structuredClone(s);if((next.townLayout??0)<2){next.townLayout=2;if(next.interior===undefined)Object.assign(next,WORLD.spawn);for(const m of next.monsters){Object.assign(m,monsterHome(m.id));m.navPath=[];m.mode='patrol';}}return next}
+
