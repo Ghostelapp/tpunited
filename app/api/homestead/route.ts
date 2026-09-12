@@ -1,3 +1,5 @@
+import {recordLegacyVisit} from '@/lib/legacy';
+import {legacyFor,unlockLegacy,type GameState} from '@/packages/game-core/world';
 import {z} from 'zod';
 import {db,json,fail,identity,sameOrigin,readJson,HttpError,type PlayerRow} from '@/lib/server';
 import {homeAccess,initializeHome,upgradeCost,type Home} from '@/lib/homestead';
@@ -16,7 +18,7 @@ export async function POST(req:Request){try{
  if(b.action!=='withdraw'){
  if(!b.parcel||!parcels.some(p=>p.id===b.parcel))throw new HttpError('Choose a parcel.');
  const access=await homeAccess(user,b.parcel);
- if(b.action==='visit'){await db().prepare('INSERT INTO tutorial_rewards(user_id,visited_at) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET visited_at=MAX(visited_at,excluded.visited_at)').bind(user,Date.now()).run();return json({ok:true})}
+ if(b.action==='visit'){if(!access.canEdit)await recordLegacyVisit(user,access.home.owner);await db().prepare('INSERT INTO tutorial_rewards(user_id,visited_at) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET visited_at=MAX(visited_at,excluded.visited_at)').bind(user,Date.now()).run();return json({ok:true})}
  if(!access.canEdit)throw new HttpError('Only the owner can manage this parcel.',403);
  home=await initializeHome(access.home);
  }
@@ -27,12 +29,13 @@ export async function POST(req:Request){try{
  const player=await db().prepare('SELECT * FROM players WHERE user_id=?').bind(user).first<PlayerRow>();if(!player)throw new HttpError('Create your character in town first.',409);
  await db().prepare('INSERT INTO homestead_vaults(user_id) VALUES(?) ON CONFLICT DO NOTHING').bind(user).run();
  const vault=(await db().prepare('SELECT scrap FROM homestead_vaults WHERE user_id=?').bind(user).first<{scrap:number}>())!;
- const state=JSON.parse(player.state),next={...state},now=Date.now(),stamp=crypto.randomUUID();let bank=vault.scrap;
+ const state=JSON.parse(player.state) as GameState,next={...structuredClone(state),writeId:''},now=Date.now(),stamp=crypto.randomUUID();let bank=vault.scrap;
  if(b.action==='upgrade'){if(!b.module)throw new HttpError('Choose a building.');const level=home![b.module];if(level>=3)throw new HttpError('Maximum level reached.');next.scrap-=upgradeCost(level);home![b.module]=level+1}
  if(b.action==='craft'){if(!home!.workshop)throw new HttpError('Build a workshop first.');next.scrap-=Math.max(6,18-4*home!.workshop);next.medkits+=1}
  if(b.action==='harvest'){if(!home!.garden)throw new HttpError('Build a garden first.');if(now-home!.harvest_at<86400000)throw new HttpError('The next harvest is not ready yet.',409);next.circuits+=2*home!.garden;home!.harvest_at=now}
  if(b.action==='deposit'){if(!home!.warehouse||!b.amount)throw new HttpError('Build a warehouse and enter an amount.');if(bank+b.amount>home!.warehouse*200)throw new HttpError('Warehouse capacity exceeded.');next.scrap-=b.amount;bank+=b.amount}
  if(b.action==='withdraw'){if(!b.amount||bank<b.amount)throw new HttpError('Not enough stored scrap.');next.scrap+=b.amount;bank-=b.amount}
+ next.legacy??=legacyFor(next);if(b.action==='craft'&&!next.legacy.recipes.includes('medkit'))next.legacy.recipes.push('medkit');if(b.action==='upgrade'&&b.module)next.legacy.modules[b.module]=Math.max(next.legacy.modules[b.module]??0,home![b.module]);unlockLegacy(next,now);
  if(next.scrap<0)throw new HttpError('Not enough scrap.');next.writeId=stamp;
  const guard=home?' AND EXISTS(SELECT 1 FROM parcel_homes WHERE parcel=? AND revision=? AND owner=? AND version=?)':'';
  const params: (string|number)[]=[JSON.stringify(next),now,user,player.revision];if(home)params.push(home.parcel,home.revision,home.owner,home.version);
@@ -42,3 +45,4 @@ export async function POST(req:Request){try{
  statements.push(db().prepare(`INSERT INTO economy(id,user_id,kind,amount,created_at) SELECT ?,?,?,?,? WHERE ${updated}`).bind(stamp,user,`homestead_${b.action}`,next.scrap-state.scrap,now,user,player.revision+1,stamp));
  const results=await db().batch(statements);if(!results[0].meta.changes)throw new HttpError('Progress changed in another tab. Refresh and retry.',409);return json({ok:true});
  }catch(e){return fail(e)}}
+

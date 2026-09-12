@@ -1,11 +1,12 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {advance,initialState,NPCS,BUILDINGS,blocked} from './world.ts';
+import {advance as step,initialState,NPCS,BUILDINGS,blocked,type GameState,type Intent} from './world.ts';
+function advance(s:GameState,a:Intent,elapsed:number,now:number){const n=step(s,a,elapsed,now);return a.type==='attack'&&n.strike&&n.strike.at>now?step(n,{type:'tick'},0,n.strike.at):n}
 test('movement is bounded by time and diagonal normalized',()=>{const s=initialState();const n=advance(s,{type:'move',dx:1,dy:1},5000,100000);assert.ok(Math.hypot(n.x-s.x,n.y-s.y)<=190.01);assert.equal(s.x,1150)});
 test('building collision blocks crossing and world bounds are enforced',()=>{const b=BUILDINGS[0];assert.equal(blocked(b.x+50,b.y+b.h-20),true);assert.equal(blocked(-5,100),true)});
 test('quest reward requires acceptance and three legitimate kills; cannot be claimed twice',()=>{let s=initialState();s.x=NPCS[0].x;s.y=NPCS[0].y;s=advance(s,{type:'interact',target:'scrappy'},100,10000);assert.equal(s.quest,'active');s=advance(s,{type:'interact',target:'scrappy'},100,10200);assert.equal(s.scrap,0);let now=12000;for(let i=0;i<3;i++){s.monsters=[{id:i,x:s.x+50,y:s.y,hp:60,respawn:0}];for(let j=0;j<3;j++){now+=500;s=advance(s,{type:'attack'},100,now)}}assert.equal(s.questKills,3);assert.equal(s.scrap,36);s=advance(s,{type:'interact',target:'scrappy'},100,now+1000);assert.equal(s.scrap,136);s=advance(s,{type:'interact',target:'scrappy'},100,now+2000);assert.equal(s.scrap,136);assert.equal(s.quest,'complete')});
 test('remote attack gives no loot, cooldown stops spam',()=>{let s=initialState();const before=s.scrap;s=advance(s,{type:'attack'},100,10000);assert.equal(s.scrap,before);s.monsters=[{id:0,x:s.x+50,y:s.y,hp:60,respawn:0}];s=advance(s,{type:'attack'},100,10100);assert.equal(s.monsters[0].hp,60)});
 test('crafting requires location and resources',()=>{let s=initialState();s.scrap=20;s.circuits=2;s.x=0;s.y=0;s=advance(s,{type:'craft'},100,10000);assert.equal(s.medkits,2);s.x=NPCS[2].x;s.y=NPCS[2].y;s=advance(s,{type:'craft'},100,11000);assert.equal(s.medkits,3);assert.equal(s.scrap,0);assert.equal(s.circuits,0);s=advance(s,{type:'craft'},100,12000);assert.equal(s.medkits,3)});
-test('healing cannot duplicate items or exceed max health',()=>{let s=initialState();s.hp=80;s=advance(s,{type:'heal'},100,10000);assert.equal(s.hp,100);assert.equal(s.medkits,1);s=advance(s,{type:'heal'},100,11000);assert.equal(s.medkits,1)});
+test('healing cannot duplicate items or exceed max health',()=>{let s=initialState();s.hp=80;s=advance(s,{type:'heal'},100,10000);assert.equal(s.hp,80);s=advance(s,{type:'tick'},0,11500);assert.equal(s.hp,100);assert.equal(s.medkits,1);s=advance(s,{type:'heal'},100,11600);assert.equal(s.medkits,1)});
 test('weapon upgrades require workshop, resources, and cap at level 3',()=>{let s=initialState();s.scrap=10000;s.circuits=1000;s=advance(s,{type:'upgrade'},100,10000);assert.equal(s.weaponLevel,0);s.x=NPCS[2].x;s.y=NPCS[2].y;for(let i=0;i<3;i++)s=advance(s,{type:'upgrade'},100,11000+i*1000);assert.equal(s.weaponLevel,3);const cost=s.scrap;s=advance(s,{type:'upgrade'},100,15000);assert.equal(s.weaponLevel,3);assert.equal(s.scrap,cost)});
 test('vendor transactions conserve resources and require proximity',()=>{let s=initialState();s.scrap=30;s.circuits=1;s=advance(s,{type:'buy_medkit'},100,10000);assert.equal(s.medkits,2);const n=NPCS.find(n=>n.id==='merchant')!;s.x=n.x;s.y=n.y;s=advance(s,{type:'buy_medkit'},100,11000);assert.equal(s.scrap,0);assert.equal(s.medkits,3);s=advance(s,{type:'sell_circuit'},100,12000);assert.equal(s.scrap,4);assert.equal(s.circuits,0);s=advance(s,{type:'sell_circuit'},100,13000);assert.equal(s.scrap,4)});
 test('salvage quest consumes six circuits and rewards only once',()=>{let s=initialState();s.x=NPCS[2].x;s.y=NPCS[2].y;s.circuits=6;s=advance(s,{type:'salvage_quest'},100,10000);assert.equal(s.salvageQuest,'active');s=advance(s,{type:'salvage_quest'},100,11000);assert.equal(s.salvageQuest,'complete');assert.equal(s.circuits,0);assert.equal(s.scrap,75);s=advance(s,{type:'salvage_quest'},100,12000);assert.equal(s.scrap,75)});
@@ -26,7 +27,7 @@ test('motion batches cannot create extra time or diagonal speed',async()=>{
  assert.ok(Math.hypot(s.x-x,s.y-y)<=47.50001);
 });
 test('long movement cannot tunnel through a building foot collision',async()=>{
- const {movePosition}=await import('./world.ts');const p=movePosition({x:800,y:580},{dx:0,dy:1,ms:1000});assert.ok(p.y<=605);
+ const {movePosition}=await import('./world.ts');const p=movePosition({x:800,y:570},{dx:0,dy:1,ms:1000});assert.ok(p.y<=585);
 });
 test('delayed acknowledgements preserve position across different frame rates',async()=>{
  const {replayMotion,applyMotion}=await import('./world.ts');
@@ -154,3 +155,4 @@ test('hit feedback reports actual health removed, disappears on next tick and ig
  const cooldown=advance(s,{type:'attack'},0,now+100);assert.equal(cooldown.hitFeedback,undefined);assert.equal(cooldown.monsters[0].hp,35);
  s.monsters[0].hp=7;s=advance(s,{type:'attack'},0,now+500);assert.equal(s.hitFeedback?.amount,7);s=advance(s,{type:'tick'},0,now+600);assert.equal(s.hitFeedback,undefined);
 });
+

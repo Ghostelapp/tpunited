@@ -1,4 +1,5 @@
-import {sqliteTable,text,integer,index,uniqueIndex} from 'drizzle-orm/sqlite-core';
+import {sql} from 'drizzle-orm';
+import {sqliteTable,text,integer,index,uniqueIndex,primaryKey,check} from 'drizzle-orm/sqlite-core';
 export const players=sqliteTable('players',{userId:text('user_id').primaryKey().references(()=>registrations.userId),username:text('username').notNull().unique(),state:text('state').notNull(),revision:integer('revision').notNull().default(0),updatedAt:integer('updated_at').notNull(),createdAt:integer('created_at').notNull()},t=>[index('players_updated_idx').on(t.updatedAt)]);
 export const wallets=sqliteTable('wallets',{address:text('address').primaryKey(),userId:text('user_id').notNull(),chainId:integer('chain_id').notNull(),createdAt:integer('created_at').notNull()},t=>[index('wallet_user_idx').on(t.userId)]);
 export const nonces=sqliteTable('nonces',{id:text('id').primaryKey(),userId:text('user_id').notNull(),address:text('address').notNull(),message:text('message').notNull(),expiresAt:integer('expires_at').notNull()});
@@ -49,3 +50,6 @@ export const tutorialRewards=sqliteTable('tutorial_rewards',{userId:text('user_i
 
 export const parcelPresence=sqliteTable('parcel_presence',{userId:text('user_id').primaryKey().references(()=>registrations.userId),parcel:integer('parcel').notNull(),version:text('version').notNull(),x:integer('x').notNull(),y:integer('y').notNull(),updatedAt:integer('updated_at').notNull()},t=>[index('parcel_presence_recent').on(t.parcel,t.updatedAt)]);
 export const parcelMessages=sqliteTable('parcel_messages',{id:text('id').primaryKey(),userId:text('user_id').notNull().references(()=>registrations.userId),parcel:integer('parcel').notNull(),version:text('version').notNull(),message:text('message').notNull(),createdAt:integer('created_at').notNull()},t=>[index('parcel_messages_recent').on(t.parcel,t.createdAt),index('parcel_messages_sender').on(t.userId,t.createdAt)]);
+
+
+export const legacyVisits=sqliteTable('legacy_visits',{visitor:text('visitor').notNull(),owner:text('owner').notNull(),createdAt:integer('created_at').notNull()},t=>[primaryKey({columns:[t.visitor,t.owner]}),index('legacy_visits_owner').on(t.owner),check('legacy_no_self',sql`${t.visitor} <> ${t.owner}`)]);

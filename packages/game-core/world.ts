@@ -13,17 +13,25 @@ export const BUILDINGS=[{x:940,y:390,w:300,h:260,sx:0,sy:0,sw:365,sh:340,name:'C
 export function blocked(x:number,y:number){return x<30||y<30||x>WORLD.width-30||y>WORLD.height-30||BUILDINGS.some(b=>x>b.x-12&&x<b.x+b.w+12&&y>b.y+b.h-65&&y<b.y+b.h+8)}
 export const NPCS=[{id:'scrappy',name:'Scrappy',x:1150,y:710,sx:205,sy:215,sw:76,sh:111,text:'Welcome to Trash Town. Those toxic slimes are eating our cables. Clear three out and I’ll make it worth your while.'},{id:'patch',name:'Dr. Patch',x:825,y:705,sx:205,sy:398,sw:76,sh:120,text:'Stay in one piece out there. I can patch you up for 15 scrap.'},{id:'wrench',name:'Wrench',x:1480,y:705,sx:834,sy:213,sw:78,sh:112,text:'Two circuits and 20 scrap. That’s all I need to make you a fresh medkit.'},{id:'merchant',name:'Bolt',x:1480,y:1095,sx:201,sy:590,sw:81,sh:112,text:'Welcome to the General Store. Medkits cost 30 scrap. I buy circuits for 4 scrap each.'}];
 export const parcels=Array.from({length:100},(_,i)=>({id:i+1,regionId:0,x:60+(i%10)*40,y:80+Math.floor(i/10)*40,width:32,height:32,rarity:i%17===0?'EPIC':i%5===0?'RARE':'COMMON',buildingSlots:i%17===0?6:i%5===0?4:2,status:i>=80?'SYSTEM':i>=70?'RESERVED':'UNRELEASED'}));
-export type Monster={navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
+export type Monster={windup?:{at:number;x:number;y:number};lastSkill?:number;navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
 export type NftGear={id:string;tokenId:number;name:string;image:string;slot:GearSlot;rarity:"common"|"uncommon"|"rare"|"epic"|"legendary"|"mythic";damage:number;armor:number;minLevel:number};
-export type GameState={healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
+export type GameState={stamina?:number;energy?:number;dodgeUntil?:number;lastDodge?:number;strike?:{at:number;dx:number;dy:number;kind:WeaponKind;damage:number};hits?:{x:number;y:number;amount:number}[];legacy?:LegacyProgress;bandages?:number;bandage?:{until:number;remaining:number;credit:number};healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number;hits?:number;deaths?:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
 export function initialState():GameState{return {...WORLD.spawn,townLayout:2,weaponLevel:0,salvageQuest:'available',bountyQuest:'available',bountyKills:0,hp:100,xp:0,scrap:0,circuits:0,medkits:2,kills:0,quest:'available',questKills:0,lastAttack:0,lastDamage:0,events:[],buildings:[],monsters:Array.from({length:8},(_,i)=>({id:i,kind:(i<4?'slime':i<6?'rat':'bug') as 'slime'|'rat'|'bug',x:1930+(i%3)*130,y:480+Math.floor(i/3)*230,hp:i<4?60:i<6?40:100,respawn:0}))}}
-export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage';dx?:number;dy?:number;target?:string};
-export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameState {
- const next=migrateTown(s);next.events=[];delete next.hitFeedback;next.daily=dailyFor(s,now);const dt=Math.max(0,Math.min(elapsed,1000))/1000;
- if(['attack','enter','exit','dungeon_enter'].includes(a.type)&&next.healing){delete next.healing;next.events.push('Medkit interrupted · item kept.');}
- if(a.type==='attack')next.restSince=now;
+export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage'|'dodge'|'legacy_claim'|'legacy_pin'|'legacy_title';dx?:number;dy?:number;target?:string};
+function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number):GameState {
+ const next=migrateTown(s);next.events=[];delete next.hitFeedback;delete next.hits;next.daily=dailyFor(s,now);const dt=Math.max(0,Math.min(elapsed,1000))/1000;
+ if(['attack','dodge','enter','exit','dungeon_enter'].includes(a.type)&&next.healing){delete next.healing;next.events.push('Medkit interrupted · item kept.');}
+ if(a.type==='attack'||a.type==='dodge')next.restSince=now;
+ next.stamina=Math.min(100,(next.stamina??100)+dt*18);next.energy=Math.min(100,(next.energy??100)+dt*8);
+ if(['enter','exit','dungeon_enter'].includes(a.type))delete next.strike;
+ if(a.type==='dodge'&&now-(next.lastDodge??0)>=900&&next.stamina>=30){const length=Math.hypot(a.dx??1,a.dy??0);if(length>0){next.stamina-=30;next.lastDodge=now;next.dodgeUntil=now+180;delete next.strike;Object.assign(next,movePosition(next,{dx:(a.dx??1)/length,dy:(a.dy??0)/length,ms:580},next.interior));}}
+ if(a.type==='attack'&&!next.strike&&(next.interior===undefined||next.interior===11)){
+ const kind=weaponKind(next),spec=WEAPONS[kind],length=Math.hypot(a.dx??1,a.dy??0);
+ if(length>0&&now-next.lastAttack>=spec.cooldown&&next.energy>=spec.energy){next.lastAttack=now;next.energy-=spec.energy;next.strike={at:now+spec.windup,dx:(a.dx??1)/length,dy:(a.dy??0)/length,kind,damage:gearStats(next).damage};}
+ }
+
  if(a.type==='dungeon_enter'){
- if(next.interior===undefined&&Math.hypot(next.x-SEWER_DOOR.x,next.y-SEWER_DOOR.y)<85){next.interior=11;if(!next.dungeon||next.dungeon.cleared)next.dungeon={monsters:newDungeonMonsters(),cleared:false,run:(next.dungeon?.run??0)+1};Object.assign(next,DUNGEON.spawn);next.events.push('Toxic Sewers · Defeat the Garbage King. Q uses a medkit.');}else next.events.push('Find the sewer hatch in the eastern outskirts.');return next;
+ if(next.interior===undefined&&Math.hypot(next.x-SEWER_DOOR.x,next.y-SEWER_DOOR.y)<85){next.interior=11;if(!next.dungeon||next.dungeon.cleared)next.dungeon={monsters:newDungeonMonsters(),cleared:false,hits:0,deaths:0,run:(next.dungeon?.run??0)+1};Object.assign(next,DUNGEON.spawn);next.events.push('Toxic Sewers · Defeat the Garbage King. Q uses a medkit.');}else next.events.push('Find the sewer hatch in the eastern outskirts.');return next;
  }
  if(a.type==='equip'&&a.target?.startsWith('nft-')){const item=next.nftGear?.find(i=>i.id===a.target);if(item&&1+Math.floor(next.xp/100)>=item.minLevel){next.equipment??={};next.equipment[item.slot]=item.id;next.events.push(`Equipped NFT: ${item.name}`);}else next.events.push('NFT unavailable or level requirement not met.');}
  if(a.type==='equip'&&!a.target?.startsWith('nft-')){const item=next.loot?.find(i=>i.id===a.target);if(item){const gear=GEAR[item.key];next.equipment??={};next.equipment[gear.slot]=item.id;next.events.push(`Equipped ${gear.name}`);}else next.events.push('That item is not in your stash.');}
@@ -52,10 +60,19 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  else {const phase=(m.waypoint??m.id)%4,angle=phase*Math.PI/2+m.id*.73;target={x:home.x+Math.cos(angle)*65,y:home.y+Math.sin(angle)*65};if(Math.hypot(target.x-m.x,target.y-m.y)<12)m.waypoint=(m.waypoint??m.id)+1;}
  const speed=(m.kind==='boss'?38:m.kind==='rat'?90:m.kind==='bug'?48:52)*(m.mode==='patrol'?.45:1);
  if(m.kind==='boss'){
- if(m.slamAt&&now>=m.slamAt){if(Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.lastDamage=now;next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
+ if(m.slamAt&&now>=m.slamAt){if(now>=(next.dodgeUntil??0)&&Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.lastDamage=now;next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
  else if(m.mode==='chase'&&!m.slamAt&&now-(m.lastSlam??0)>4500&&toPlayer<180)m.slamAt=now+1100;
  }
- if(!m.slamAt){
+ if(m.kind!=='boss'){
+ if(m.windup&&now>=m.windup.at){const target=m.windup;m.lastSkill=now;delete m.windup;
+ if(m.kind==='rat')moveMonster(m,target,480,.25,activeMonsters(next),0,next.interior);
+ const center=m.kind==='slime'?target:m,radius=m.kind==='slime'?65:m.kind==='bug'?95:60;
+ if(now>=(next.dodgeUntil??0)&&Math.hypot(next.x-center.x,next.y-center.y)<radius&&clearMonsterPath(m,next,next.interior)){
+ next.hp-=Math.max(1,(m.kind==='bug'?20:m.kind==='rat'?10:12)-gearStats(next).armor);next.lastDamage=now;
+ }
+ }else if(!m.windup&&m.mode==='chase'&&now-(m.lastSkill??0)>1800&&toPlayer<(m.kind==='slime'?220:m.kind==='rat'?150:115)&&clearMonsterPath(m,next,next.interior))m.windup={at:now+(m.kind==='bug'?950:m.kind==='slime'?800:650),x:next.x,y:next.y};
+ }
+ if(!m.slamAt&&!m.windup){
  let destination=target,stop=m.mode==='chase'?38:4;
  if(!clearMonsterPath(m,target,next.interior)){
  if(!m.navPath?.length||now-(m.navAt??0)>1000||!m.navGoal||Math.hypot(target.x-m.navGoal.x,target.y-m.navGoal.y)>64){m.navPath=findMonsterPath(m,target,next.interior);m.navAt=now;m.navGoal={x:target.x,y:target.y};}
@@ -64,30 +81,41 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  }else m.navPath=[];
  moveMonster(m,destination,speed,dt,activeMonsters(next),stop,next.interior);
  }
- if(m.mode==='chase'&&Math.hypot(m.x-next.x,m.y-next.y)<47&&clearMonsterPath(m,next,next.interior)&&now-next.lastDamage>1100){next.hp-=Math.max(1,(m.kind==='boss'?16:m.kind==='bug'?14:m.kind==='rat'?6:9)-gearStats(next).armor);next.lastDamage=now;}
+ if(m.kind==='boss'&&now>=(next.dodgeUntil??0)&&m.mode==='chase'&&Math.hypot(m.x-next.x,m.y-next.y)<47&&clearMonsterPath(m,next,next.interior)&&now-next.lastDamage>1100){next.hp-=Math.max(1,(m.kind==='boss'?16:m.kind==='bug'?14:m.kind==='rat'?6:9)-gearStats(next).armor);next.lastDamage=now;}
  }
 
- if((next.interior===undefined||next.interior===11)&&a.type==='attack'&&now-next.lastAttack>=480){next.lastAttack=now;const hit=activeMonsters(next).filter(m=>m.hp>0&&Math.hypot(m.x-next.x,m.y-next.y)<112&&clearMonsterPath(next,m,next.interior)).sort((a,b)=>Math.hypot(a.x-next.x,a.y-next.y)-Math.hypot(b.x-next.x,b.y-next.y))[0];if(hit){next.hitFeedback={x:hit.x,y:hit.y,amount:Math.min(hit.hp,gearStats(next).damage)};hit.hp-=gearStats(next).damage;if(hit.hp<=0){hit.respawn=now+25000;next.scrap+=12;next.circuits++;next.xp+=20;next.kills++;next.daily.kills++;if(next.quest==='active'&&(!hit.kind||hit.kind==='slime'))next.questKills++;if(next.bountyQuest==='active'&&hit.kind==='rat')next.bountyKills=(next.bountyKills??0)+1;next.events.push('+12 scrap · +1 circuit · +20 XP');awardLoot(next,hit,now);if(hit.kind==='boss'&&next.dungeon){next.dungeon.cleared=true;next.scrap+=150;next.xp+=150;next.medkits+=2;next.events.push('GARBAGE KING DEFEATED! +150 Scrap · +150 XP · +2 medkits. Return to the entrance.')}}}}
+ if(next.hp<=0)delete next.strike;
+ if(next.strike&&now>=next.strike.at){const strike=next.strike;delete next.strike;const spec=WEAPONS[strike.kind];
+ const targets=activeMonsters(next).filter(m=>{const x=m.x-next.x,y=m.y-next.y,d=Math.hypot(x,y);return m.hp>0&&d<spec.range&&(d<1||(x*strike.dx+y*strike.dy)/d>=spec.arc)&&clearMonsterPath(next,m,next.interior)}).sort((a,b)=>Math.hypot(a.x-next.x,a.y-next.y)-Math.hypot(b.x-next.x,b.y-next.y)).slice(0,strike.kind==='hammer'?8:1);
+ for(const hit of targets){next.hitFeedback={x:hit.x,y:hit.y,amount:Math.min(hit.hp,strike.damage)};next.hits??=[];next.hits.push(next.hitFeedback);hit.hp-=strike.damage;if(hit.hp<=0){hit.respawn=now+25000;next.scrap+=12;next.circuits++;next.xp+=20;next.kills++;next.daily.kills++;if(next.quest==='active'&&(!hit.kind||hit.kind==='slime'))next.questKills++;if(next.bountyQuest==='active'&&hit.kind==='rat')next.bountyKills=(next.bountyKills??0)+1;next.events.push('+12 scrap · +1 circuit · +20 XP');awardLoot(next,hit,now);if(hit.kind==='boss'&&next.dungeon){next.dungeon.cleared=true;next.scrap+=150;next.xp+=150;next.medkits+=2;next.events.push('GARBAGE KING DEFEATED! +150 Scrap · +150 XP · +2 medkits. Return to the entrance.')}}}}
  if(a.type==='interact'){const npc=sceneNPCS(next.interior).find(n=>n.id===a.target&&Math.hypot(n.x-next.x,n.y-next.y)<125);if(npc?.id==='scrappy'){if(next.quest==='available'){next.quest='active';next.questKills=0;next.events.push('Quest accepted: A Cleaner Tomorrow')}else if(next.quest==='active'&&next.questKills>=3){next.quest='complete';next.scrap+=100;next.xp+=100;next.events.push('Quest complete! +100 scrap · +100 XP')}else next.events.push('Clear 3 toxic slimes east of town, then return to Scrappy.')}if(npc?.id==='patch'){if(next.scrap>=15&&next.hp<100){next.scrap-=15;next.hp=100;next.events.push('Patched up. −15 scrap')}else next.events.push(next.hp===100?'You are already healthy.':'You need 15 scrap.')}}
- if(a.type==='craft'){if(!nearService(next,'wrench',140))next.events.push('Visit Wrench at the workshop.');else if(next.scrap>=20&&next.circuits>=2){next.scrap-=20;next.circuits-=2;next.medkits++;next.daily.crafted++;next.events.push('Crafted 1 medkit')}else next.events.push('Needs 20 scrap + 2 circuits.')}
+ if(a.type==='craft'&&a.target!=='bandage'){if(!nearService(next,'wrench',140))next.events.push('Visit Wrench at the workshop.');else if(next.scrap>=20&&next.circuits>=2){next.scrap-=20;next.circuits-=2;next.medkits++;next.daily.crafted++;next.events.push('Crafted 1 medkit')}else next.events.push('Needs 20 scrap + 2 circuits.')}
  if(a.type==='buy_medkit'||a.type==='sell_circuit'){if(!nearService(next,'merchant',130))next.events.push('Visit the General Store to trade.');else if(a.type==='buy_medkit'){if(next.scrap>=30){next.scrap-=30;next.medkits++;next.events.push('Bought a medkit · −30 scrap')}else next.events.push('A medkit costs 30 scrap.')}else if(next.circuits>0){next.circuits--;next.scrap+=4;next.events.push('Sold a circuit · +4 scrap')}else next.events.push('No circuits to sell.')}
  if(a.type==='upgrade'){const lvl=next.weaponLevel??0,cost=75*(lvl+1),parts=5*(lvl+1);if(!nearService(next,'wrench',140))next.events.push('Visit Wrench to upgrade your blade.');else if(lvl>=3)next.events.push('Your blade is fully upgraded.');else if(next.scrap>=cost&&next.circuits>=parts){next.scrap-=cost;next.circuits-=parts;next.weaponLevel=lvl+1;next.events.push('Blade upgraded · +5 damage')}else next.events.push(`Needs ${cost} scrap + ${parts} circuits.`)}
  if(a.type==='salvage_quest'){if(!nearService(next,'wrench',140))next.events.push('Talk to Wrench at the workshop.');else if(!next.salvageQuest||next.salvageQuest==='available'){next.salvageQuest='active';next.events.push('Quest accepted: Spare Parts. Bring Wrench 6 circuits.')}else if(next.salvageQuest==='active'&&next.circuits>=6){next.circuits-=6;next.scrap+=75;next.xp+=70;next.salvageQuest='complete';next.events.push('Spare Parts complete · +75 scrap · +70 XP')}else next.events.push(next.salvageQuest==='complete'?'Wrench already has the parts.':'You need 6 circuits.')}
  if(a.type==='bounty_quest'){if(!nearService(next,'scrappy',130))next.events.push('Visit Scrappy in the town square.');else if(!next.bountyQuest||next.bountyQuest==='available'){next.bountyQuest='active';next.bountyKills=0;next.events.push('Bounty accepted: Rat Problem. Defeat 5 trash rats.')}else if(next.bountyQuest==='active'&&(next.bountyKills??0)>=5){next.bountyQuest='complete';next.scrap+=120;next.xp+=120;next.events.push('Rat Problem complete · +120 scrap · +120 XP')}else next.events.push(next.bountyQuest==='complete'?'This bounty has already been claimed.':`Trash rats defeated: ${next.bountyKills??0}/5`)}
  // Resolve incoming damage before any healing. A fatal hit cannot be rescued by a pending medkit.
- if(next.lastDamage===now){if(next.healing)next.events.push('Medkit interrupted by damage · item kept.');delete next.healing;next.restSince=now;next.restCredit=0;}
+ if(next.lastDamage===now){delete next.bandage;if(next.healing)next.events.push('Medkit interrupted by damage · item kept.');delete next.healing;next.restSince=now;next.restCredit=0;}
  if(next.healing&&now>=next.healing.readyAt){
  if(next.hp>0&&next.hp<100&&next.medkits>0){next.medkits--;next.hp=Math.min(100,next.hp+50);next.healCooldownUntil=now+6000;next.events.push('Used medkit · up to 50 HP restored.');}
  delete next.healing;
  }
- if(a.type==='heal'&&!next.healing&&next.hp>0&&next.hp<100&&next.medkits>0&&now>=(next.healCooldownUntil??0)){
+ if(a.type==='heal'&&a.target!=='bandage'&&!next.bandage&&!next.healing&&next.hp>0&&next.hp<100&&next.medkits>0&&now>=(next.healCooldownUntil??0)){
  next.healing={startedAt:now,readyAt:now+1500};next.events.push('Applying medkit · 1.5 seconds. Attacking or taking damage interrupts.');
  }
+ if(a.type==='craft'&&a.target==='bandage'&&nearService(next,'wrench',140)&&next.scrap>=8){next.scrap-=8;next.bandages=(next.bandages??0)+1;next.events.push('Crafted field bandage · 8 Scrap.');}
+ if(a.type==='heal'&&a.target==='bandage'&&!next.healing&&!next.bandage&&next.hp>0&&next.hp<100&&(next.bandages??0)>0&&now>=(next.healCooldownUntil??0)){
+ next.bandages!--;next.bandage={until:now+6000,remaining:30,credit:0};next.healCooldownUntil=now+12000;next.events.push('Bandage applied · 30 HP over 6 seconds. Damage interrupts.');
+ }else if(next.bandage&&next.hp>0){
+ const b=next.bandage;const seconds=Math.min(dt,Math.max(0,(b.until-(now-Math.max(0,elapsed)))/1000));b.credit+=seconds*5;
+ const hp=Math.min(b.remaining,Math.floor(b.credit));next.hp=Math.min(100,next.hp+hp);b.remaining-=hp;b.credit-=hp;
+ if(now>=b.until||!b.remaining||next.hp>=100)delete next.bandage;
+ }
  const safe=next.interior===undefined?next.x<1740:next.interior!==11;
- if(!safe||a.type==='attack'||next.lastDamage===now){next.restSince=now;next.restCredit=0;}
+ if(!safe||(a.type==='attack'||a.type==='dodge')||next.lastDamage===now){next.restSince=now;next.restCredit=0;}
  else {
  next.restSince??=now;
- if(now-Math.max(next.restSince,next.lastDamage,next.lastAttack)>=10000&&next.hp>0&&next.hp<100&&!next.healing){
+ if(now-Math.max(next.restSince,next.lastDamage,next.lastAttack)>=10000&&next.hp>0&&next.hp<100&&!next.healing&&!next.bandage){
  next.restCredit=(next.restCredit??0)+dt*2;const restored=Math.floor(next.restCredit);next.hp=Math.min(100,next.hp+restored);next.restCredit-=restored;
  }
  }
@@ -103,7 +131,7 @@ export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameStat
  if(quest&&!next.daily.claimed.includes(quest.id)&&dailyCount(next.daily,quest.id)>=quest.goal){next.daily.claimed.push(quest.id);next.scrap+=quest.scrap;next.xp+=quest.xp;next.events.push(`Daily complete: ${quest.title} · +${quest.scrap} Scrap · +${quest.xp} XP`);}
  else next.events.push('Daily reward unavailable: finish the task or check if already claimed.');
  }
- if(next.hp<=0){delete next.healing;next.restSince=now;next.restCredit=0;delete next.interior;next.hp=100;next.x=WORLD.spawn.x;next.y=WORLD.spawn.y;next.scrap=Math.max(0,next.scrap-20);next.events.push('Rescued by the clinic. Up to 20 scrap lost.')}
+ if(next.hp<=0){delete next.strike;delete next.bandage;delete next.healing;next.restSince=now;next.restCredit=0;delete next.interior;next.hp=100;next.x=WORLD.spawn.x;next.y=WORLD.spawn.y;next.scrap=Math.max(0,next.scrap-20);next.events.push('Rescued by the clinic. Up to 20 scrap lost.')}
  return next;
 }
 
@@ -196,3 +224,49 @@ export function findMonsterPath(start:{x:number;y:number},goal:{x:number;y:numbe
 
 export function migrateTown(s:GameState):GameState{const next=structuredClone(s);if((next.townLayout??0)<2){next.townLayout=2;if(next.interior===undefined)Object.assign(next,WORLD.spawn);for(const m of next.monsters){Object.assign(m,monsterHome(m.id));m.navPath=[];m.mode='patrol';}}return next}
 
+
+export type LegacyProgress={species:string[];rooms:number[];caches:string[];recipes:string[];modules:Record<string,number>;visited:number;hosted:number;deathless:boolean;flawless:boolean;unlocked:Record<string,number>;claimed:Record<string,number>;pins:string[];title?:string};
+export const LEGACY=[
+ {id:'kills25',category:'Combat',name:'Street Cleaner',text:'Defeat 25 monsters.',goal:25,metric:'kills',points:10,scrap:15,title:'Street Cleaner'},
+ {id:'kills100',category:'Combat',name:'Outskirts Veteran',text:'Defeat 100 monsters.',goal:100,metric:'kills',points:25,scrap:25,title:'Outskirts Veteran'},
+ {id:'kills500',category:'Combat',name:'Wasteland Legend',text:'Defeat 500 monsters.',goal:500,metric:'kills',points:75,scrap:40,title:'Wasteland Legend'},
+ {id:'species',category:'Combat',name:'Field Researcher',text:'Defeat a slime, rat, bug and Garbage King.',goal:4,metric:'species',points:30,scrap:20,title:'Field Researcher'},
+ {id:'deathless',category:'Mastery',name:'Unbroken',text:'Clear a new sewer run without dying.',goal:1,metric:'deathless',points:50,scrap:25,title:'Unbroken'},
+ {id:'flawless',category:'Mastery',name:'Untouchable',text:'Clear a new sewer run without taking damage.',goal:1,metric:'flawless',points:100,scrap:25,title:'Untouchable'},
+ {id:'rooms',category:'Exploration',name:'Every Door',text:'Enter all 11 town interiors and the Toxic Sewers.',goal:12,metric:'rooms',points:25,scrap:20,title:'Wayfinder'},
+ {id:'caches',category:'Exploration',name:'Nothing Wasted',text:'Find all four town salvage caches.',goal:4,metric:'caches',points:20,scrap:15,title:'Cache Hunter'},
+ {id:'craft',category:'Crafting',name:'Made by Panda',text:'Craft your first supply item.',goal:1,metric:'recipes',points:10,scrap:8,title:'Tinkerer'},
+ {id:'recipes',category:'Crafting',name:'Field Supplier',text:'Craft both a medkit and a bandage.',goal:2,metric:'recipes',points:20,scrap:15,title:'Field Supplier'},
+ {id:'module',category:'Homestead',name:'Foundations',text:'Build your first homestead module.',goal:1,metric:'module',points:15,scrap:15,title:'Homesteader'},
+ {id:'modules',category:'Homestead',name:'Built to Last',text:'Personally upgrade workshop, warehouse and garden to level 3.',goal:9,metric:'modules',points:50,scrap:30,title:'Master Builder'},
+ {id:'visits',category:'Community',name:'Good Neighbor',text:'Visit parcels belonging to five different players.',goal:5,metric:'visited',points:20,scrap:0,title:'Good Neighbor'},
+ {id:'host',category:'Community',name:'Open Doors',text:'Welcome a different player to your parcel.',goal:1,metric:'hosted',points:15,scrap:0,title:'Welcoming Panda'},
+] as const;
+export function legacyFor(s:GameState):LegacyProgress{return s.legacy??{species:[],rooms:[],caches:[],recipes:[],modules:{},visited:0,hosted:0,deathless:false,flawless:false,unlocked:{},claimed:{},pins:[]}}
+export function legacyCount(s:GameState,id:string){const q=LEGACY.find(q=>q.id===id),l=legacyFor(s);if(!q)return 0;switch(q.metric){case 'kills':return s.kills;case 'module':return Object.values(l.modules).some(v=>v>0)?1:0;case 'modules':return ['workshop','warehouse','garden'].reduce((n,k)=>n+Math.min(3,l.modules[k]??0),0);default:{const v=l[q.metric];return Array.isArray(v)?v.length:typeof v==='boolean'?Number(v):v;}}}
+export function legacyTitle(s:GameState){const l=legacyFor(s);return l.title&&l.claimed[l.title]!==undefined?LEGACY.find(q=>q.id===l.title)?.title:undefined}
+export function unlockLegacy(s:GameState,now:number){s.legacy??=legacyFor(s);for(const q of LEGACY)if(legacyCount(s,q.id)>=q.goal&&s.legacy.unlocked[q.id]===undefined){s.legacy.unlocked[q.id]=now;s.events.push(`PANDA LEGACY · ${q.name} unlocked`);}}
+export function advance(s:GameState,a:Intent,elapsed:number,now:number):GameState{
+ const next=advanceWorld(s,a,elapsed,now);next.legacy??=legacyFor(next);const l=next.legacy;
+ const add=<T,>(items:T[],value:T)=>{if(!items.includes(value))items.push(value)};
+ if(next.interior!==undefined)add(l.rooms,next.interior);
+ if(a.type==='cache'&&next.daily?.caches.includes(a.target??'')&&!dailyFor(s,now).caches.includes(a.target??''))add(l.caches,a.target!);
+ if(a.type==='craft'&&next.medkits>s.medkits)add(l.recipes,'medkit');
+ if(a.type==='craft'&&(next.bandages??0)>(s.bandages??0))add(l.recipes,'bandage');
+ if(next.dungeon&&next.lastDamage===now&&s.interior===11&&next.dungeon.hits!==undefined)next.dungeon.hits++;
+ if(next.dungeon&&next.events.some(e=>e.startsWith('Rescued'))&&s.interior===11&&next.dungeon.deaths!==undefined)next.dungeon.deaths++;
+ if(s.interior===next.interior)for(const before of activeMonsters(s)){
+ const after=activeMonsters(next).find(m=>m.id===before.id);
+ if(before.hp>0&&after&&after.hp<=0){add(l.species,after.kind??'slime');if(after.kind==='boss'&&next.dungeon){if(next.dungeon.deaths===0)l.deathless=true;if(next.dungeon.hits===0&&next.dungeon.deaths===0)l.flawless=true;}}
+ }
+ unlockLegacy(next,now);
+ const q=LEGACY.find(q=>q.id===a.target);
+ if(a.type==='legacy_claim'&&q&&l.unlocked[q.id]!==undefined&&l.claimed[q.id]===undefined){l.claimed[q.id]=now;next.scrap+=q.scrap;next.events.push(`Legacy reward: ${q.title} title + badge${q.scrap?` · ${q.scrap} Scrap`:''}`);}
+ if(a.type==='legacy_pin'&&q){if(l.pins.includes(q.id))l.pins=l.pins.filter(id=>id!==q.id);else if(l.pins.length<3)l.pins.push(q.id);else next.events.push('Unpin a goal first. Maximum: three.');}
+ if(a.type==='legacy_title'){if(!a.target)delete l.title;else if(q&&l.claimed[q.id]!==undefined)l.title=q.id;}
+ return next;
+}
+
+export type WeaponKind='blade'|'hammer'|'blaster';
+export const WEAPONS={blade:{range:112,arc:.35,cooldown:480,windup:130,energy:0},hammer:{range:135,arc:-.15,cooldown:950,windup:400,energy:0},blaster:{range:340,arc:.965,cooldown:700,windup:160,energy:12}} as const;
+export function weaponKind(s:GameState):WeaponKind{const item=s.loot?.find(i=>i.id===s.equipment?.weapon);return item?.key==='king_blade'?'hammer':item?.key==='neon_blade'?'blaster':'blade'}
