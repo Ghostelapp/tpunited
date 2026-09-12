@@ -45,6 +45,13 @@ test('real Workers WebSockets: shared combat, persistence, chat, sessions and in
   const a=await open(tokens[0]),b=await open(tokens[1]);
   const first=await a.wait(m=>m.type==='snapshot'&&m.online===2);
   assert.equal(first.players[0].username,'player1');assert.equal(first.players[0].wallet,undefined);
+  assert.equal(first.character.adminSkin,false);assert.equal(first.players[0].adminSkin,false);
+  await database.prepare("UPDATE registrations SET role='ADMIN' WHERE user_id='player1'").run();
+  await a.wait(m=>m.type==='snapshot'&&m.players[0]?.adminSkin===true);
+  await b.wait(m=>m.type==='snapshot'&&m.character.adminSkin===true);
+  await database.prepare("UPDATE registrations SET role='USER' WHERE user_id='player1'").run();
+  await a.wait(m=>m.type==='snapshot'&&m.players[0]?.adminSkin===false);
+  await b.wait(m=>m.type==='snapshot'&&m.character.adminSkin===false);
   const attack={type:'input',seq:1,scene:-1,action:{type:'attack',dx:1,dy:0},motion:[]};
   a.socket.send(JSON.stringify(attack));b.socket.send(JSON.stringify(attack));
   await a.wait(m=>m.ack===1);await b.wait(m=>m.ack===1);

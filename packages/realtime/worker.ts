@@ -122,7 +122,7 @@ export class SharedWorld {
    const connections=[...this.connections.values()];if(!connections.length)return;
    const settings=await db().prepare("SELECT value FROM site_content WHERE key='game'").first<{value:string}>();
    if(settings&&JSON.parse(settings.value).maintenance){for(const c of connections)this.close(c,1013,'Maintenance in progress.');return;}
-   const rows=await db().prepare(`SELECT p.*,s.hash FROM players p JOIN registrations r ON r.user_id=p.user_id JOIN auth_sessions s ON s.user_id=p.user_id WHERE s.hash IN (${connections.map(()=>'?').join(',')}) AND s.expires_at>? AND s.created_at>? AND r.status='active'`).bind(...connections.map(c=>c.hash),now,now-SESSION_MAX).all<PlayerRow&{hash:string}>();
+   const rows=await db().prepare(`SELECT p.*,s.hash,r.role FROM players p JOIN registrations r ON r.user_id=p.user_id JOIN auth_sessions s ON s.user_id=p.user_id WHERE s.hash IN (${connections.map(()=>'?').join(',')}) AND s.expires_at>? AND s.created_at>? AND r.status='active'`).bind(...connections.map(c=>c.hash),now,now-SESSION_MAX).all<PlayerRow&{hash:string;role:string}>();
    const active=connections.filter(c=>{if(rows.results.some(p=>p.user_id===c.id&&p.hash===c.hash))return true;this.close(c,4001,'Session expired. Sign in again.');return false;});
    if(!active.length)return;
    const world=await db().prepare("SELECT monsters,revision,updated_at FROM realtime_world WHERE id='town'").first<WorldRow>();
@@ -154,7 +154,7 @@ export class SharedWorld {
    }
    await db().batch(statements);
    this.failures=0;this.tickNumber++;
-   const peers=active.map(c=>{const s=result.players.get(c.id)!;return {username:c.username,x:s.x,y:s.y,interior:s.interior,title:legacyTitle(s),hp:s.hp,maxHp:playerStats(s).hp,lastAttack:s.lastAttack};});
+   const peers=active.map(c=>{const s=result.players.get(c.id)!;return {adminSkin:rows.results.find(p=>p.user_id===c.id)?.role==='ADMIN',username:c.username,x:s.x,y:s.y,interior:s.interior,title:legacyTitle(s),hp:s.hp,maxHp:playerStats(s).hp,lastAttack:s.lastAttack};});
    for(const c of active){
     const input=inputs.get(c.id),previous=before.get(c.id)!,state=result.players.get(c.id)!;
     const reset=!!input&&input.scene!==(previous.interior??-1)||state.interior!==previous.interior||state.events.some(e=>e.startsWith('Rescued'));
@@ -162,7 +162,7 @@ export class SharedWorld {
     const wire=structuredClone(state);
     for(const m of [...wire.monsters,...wire.dungeon?.monsters??[]]){delete m.navPath;delete m.navGoal;delete m.navAt;}
     const hits=state.interior===undefined?active.flatMap(p=>result.players.get(p.id)!.interior===undefined?result.players.get(p.id)!.hits??[]:[]):state.hits??[];
-    const snapshot:Snapshot={type:'snapshot',tick:this.tickNumber,time:now,ack:c.ack,reset,online:active.length,character:{username:c.username,state:wire,revision:rows.results.find(p=>p.user_id===c.id)!.revision+1},players:peers.filter(p=>p.username!==c.username&&state.interior!==11&&p.interior===state.interior),hits};
+    const snapshot:Snapshot={type:'snapshot',tick:this.tickNumber,time:now,ack:c.ack,reset,online:active.length,character:{adminSkin:rows.results.find(p=>p.user_id===c.id)?.role==='ADMIN',username:c.username,state:wire,revision:rows.results.find(p=>p.user_id===c.id)!.revision+1},players:peers.filter(p=>p.username!==c.username&&state.interior!==11&&p.interior===state.interior),hits};
     this.send(c,snapshot);
    }
   }catch(e){
