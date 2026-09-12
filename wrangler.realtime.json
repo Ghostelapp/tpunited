@@ -1,0 +1,12 @@
+{
+ "name":"trash-panda-realtime",
+ "main":"packages/realtime/worker.ts",
+ "compatibility_date":"2026-05-22",
+ "compatibility_flags":["nodejs_compat"],
+ "workers_dev":false,
+ "preview_urls":false,
+ "durable_objects":{"bindings":[{"name":"WORLD","class_name":"SharedWorld"}]},
+ "migrations":[{"tag":"v1","new_sqlite_classes":["SharedWorld"]}],
+ "d1_databases":[{"binding":"DB","database_name":"trash-panda-testnet","database_id":"c8d649c0-0494-4f05-812f-a56c3361efa5","migrations_dir":"drizzle"}],
+ "vars":{"BLOCKCHAIN_NETWORK":"base-sepolia","AUTH_ORIGINS":"https://tpunited.xyz,https://game.tpunited.xyz","AUTH_COOKIE_DOMAIN":"tpunited.xyz"}
+}

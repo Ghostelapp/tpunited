@@ -7,7 +7,7 @@ A playable pixel-cyberpunk alpha with server-authoritative progression and Base 
 - Landing page, `/game`, land, marketplace, profile and community.
 - One wallet-based SIWE login and HttpOnly session across the website and game. Private Sites access is a separate hosting gate; it does not create a game account.
 - Movement, collision, combat, rewards, crafting, NPC shops, weapon upgrades, interiors, dungeon runs and daily quests validated by the server.
-- In-game chat, movable HUD panels and touch controls.
+- Real-time town multiplayer over authenticated WebSockets: shared monsters, combat, interpolated players and live chat. Movable HUD panels and touch controls.
 - Seasonal leaderboard with server-side points, daily caps, eligibility, exclusions and frozen exports.
 - NFT armory: unique ERC-721 weapons and armor, rarity, artwork uploads, minimum level, minting from an authorized wallet, verified imports and actual combat bonuses.
 - Private player support tickets and bug reports, screenshots, replies, administrator triage and internal notes.
@@ -19,6 +19,9 @@ Use Node.js 22.13 or newer, as specified by the package engines.
 
 ```sh
 npm ci
+npm run realtime:migrate:local
+npm run realtime:dev
+# Keep the realtime server running; in another terminal:
 npm run dev
 npm run typecheck
 npm run game:test
@@ -36,6 +39,7 @@ The app requires Worker-compatible D1 bindings and applied migrations. Image and
 - [Seasonal leaderboard](docs/LEADERBOARD.md)
 - [Administrator guide](docs/ADMIN_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Real-time multiplayer and deployment](docs/REALTIME-MULTIPLAYER.md)
 - [Security](docs/SECURITY.md)
 
 Some older technical documents and original requirements retain their original Polish wording. They are historical documentation, not player-facing interface strings. The current support guide is in English.
@@ -68,6 +72,6 @@ node --test scripts/leaderboard.test.mjs scripts/nft-chat.test.mjs scripts/suppo
 npm run contracts:test
 ```
 
-Current multiplayer provides player presence and chat; monsters and combat are instanced per player. Party combat, guilds, PvP and a complete MMO remain future work. Support is an authenticated in-app inbox without email notifications or anonymous account-recovery submissions. NFT equipment changes combat stats but does not replace the character's clothing/weapon sprite.
+Town multiplayer shares monsters and combat through one authoritative world, with up to 30 connected accounts and a target 100 ms tick interval. Toxic Sewers remain solo and parcel presence still uses its existing polling. Party rewards, guilds, PvP and a complete MMO remain future work. Multiplayer requires the separate realtime Worker, its service binding and migration 0017; see the deployment guide. Support is an authenticated in-app inbox without email notifications or anonymous account-recovery submissions. NFT equipment changes combat stats but does not replace the character's clothing/weapon sprite.
 
 A source ZIP contains code and bundled static assets, not the production D1 database, uploaded R2 files, installed dependencies or private runtime credentials. Export production data and uploaded files separately when moving hosts.

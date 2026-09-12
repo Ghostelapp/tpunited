@@ -67,3 +67,6 @@ sessions.json
 *.pfx
 *.sqlite*
 *.db
+
+# Local multiplayer Worker bundle
+.realtime-build/
