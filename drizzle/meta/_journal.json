@@ -127,6 +127,13 @@
       "when": 1789231610454,
       "tag": "0017_realtime_world",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789274463091,
+      "tag": "0018_rare_angel",
+      "breakpoints": true
     }
   ]
 }

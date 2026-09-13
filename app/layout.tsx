@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import VisitorAnalytics from "@/components/tpu/visitor-analytics";
 import {AuthProvider} from "@/components/tpu/auth-provider";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased"><AuthProvider>{children}</AuthProvider></body>
+      <body className="antialiased"><AuthProvider>{children}<VisitorAnalytics/></AuthProvider></body>
     </html>
   );
 }
