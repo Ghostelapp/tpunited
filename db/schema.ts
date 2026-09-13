@@ -59,3 +59,11 @@ export const socialOauthStates=sqliteTable('social_oauth_states',{hash:text('has
 
 export const realtimeWorld=sqliteTable('realtime_world',{id:text('id').primaryKey(),monsters:text('monsters').notNull(),revision:integer('revision').notNull().default(0),updatedAt:integer('updated_at').notNull()});
 export const realtimeCommitGuard=sqliteTable('realtime_commit_guard',{id:integer('id').primaryKey(),ok:integer('ok').notNull()},t=>[check('realtime_guard_singleton',sql`${t.id} = 1`),check('realtime_guard_valid',sql`${t.ok} = 1`)]);
+
+export const analyticsViews=sqliteTable('analytics_views',{
+ id:text('id').primaryKey(),visitor:text('visitor').notNull(),session:text('session').notNull(),userId:text('user_id'),
+ host:text('host').notNull(),path:text('path').notNull(),referrer:text('referrer').notNull(),source:text('source').notNull(),medium:text('medium').notNull(),campaign:text('campaign').notNull(),
+ country:text('country').notNull(),device:text('device').notNull(),browser:text('browser').notNull(),os:text('os').notNull(),
+ startedAt:integer('started_at').notNull(),lastSeen:integer('last_seen').notNull(),activeSeconds:integer('active_seconds').notNull().default(0),
+},t=>[index('analytics_started').on(t.startedAt),index('analytics_seen').on(t.lastSeen),index('analytics_visitor_time').on(t.visitor,t.startedAt),index('analytics_session').on(t.session)]);
+export const analyticsLimits=sqliteTable('analytics_limits',{key:text('key').primaryKey(),count:integer('count').notNull(),expiresAt:integer('expires_at').notNull()},t=>[index('analytics_limit_expiry').on(t.expiresAt)]);

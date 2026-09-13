@@ -28,7 +28,8 @@
     "realtime:build": "wrangler deploy --config wrangler.realtime.json --dry-run --outdir .realtime-build",
     "realtime:integration": "npm run realtime:build && node --import ./scripts/register-test-typescript.mjs --test tests/realtime-integration.test.ts",
     "realtime:migrate:local": "node scripts/realtime-dev.mjs --migrate",
-    "realtime:integration:app": "node scripts/realtime-integration.mjs"
+    "realtime:integration:app": "node scripts/realtime-integration.mjs",
+    "analytics:test": "node --test scripts/analytics.test.mjs"
   },
   "dependencies": {
     "@base-org/account": "^2.5.10",
