@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
-import {WOODS_LANDMARKS,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsMonsterHealth,woodsMonsterName} from '../packages/game-core/woods.ts';
+import {WOODS_ENCOUNTER_DETAILS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile} from '../packages/game-core/woods.ts';
+import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame} from '../components/tpu/woods-monsters.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
 
 test('forest joins the eastern road and tree trunks block movement',()=>{
@@ -34,6 +35,27 @@ test('forest roster has distinct encounter identities and navigation landmarks',
  assert.deepEqual(WOODS_LANDMARKS.map(l=>l.id),['trail-camp','whisper-grove','rust-wreck','ironroot']);
  assert.ok(WOODS_SPAWNS[1].hp>WOODS_SPAWNS[0].hp);
  assert.ok(WOODS_SPAWNS[5].hp>WOODS_SPAWNS[4].hp);
+});
+
+test('every forest encounter uses a different real monster atlas family',()=>{
+ const profiles=WOODS_SPAWNS.map(m=>woodsMonsterProfile(m.id));
+ assert.ok(profiles.every(Boolean));
+ assert.equal(new Set(profiles.map(p=>p.atlasMonster)).size,7);
+ assert.deepEqual(profiles.map(p=>p.name),['SAP EEL','MIRE HOUND','BRAMBLE BAT','ASH ROACH','RUST WASP','CABLE SERPENT','IRONROOT GOLEM']);
+ assert.equal(Object.keys(WOODS_PROFILES).length,7);
+ assert.equal(WOODS_ENCOUNTER_DETAILS.length,7);
+ assert.equal(new Set(WOODS_ENCOUNTER_DETAILS.map(e=>e.marker)).size,7);
+});
+
+test('forest atlas idle and movement crops stay inside sheet 9 and exclude caption rows',()=>{
+ for(const spawn of WOODS_SPAWNS){
+  const profile=woodsMonsterProfile(spawn.id),entry=WOODS_MONSTER_ATLAS[profile.atlasMonster];
+  const frames=[entry.idle,...entry.move,woodsMonsterAtlasFrame(spawn.id,false,0),woodsMonsterAtlasFrame(spawn.id,true,0)].filter(Boolean);
+  for(const [sx,sy,sw,sh] of frames){
+   assert.ok(sx>=0&&sy>=0&&sw>0&&sh>0);
+   assert.ok(sx+sw<=1254&&sy+sh<=1254,`${profile.name} crop escaped sheet 9`);
+  }
+ }
 });
 
 test('world migration adds forest enemies once and preserves existing damage and respawn',()=>{
