@@ -11,25 +11,29 @@ export function UIIcon({name,width=32}:{name:'bag'|'quests'|'craft'|'daily'|'set
 type Decor={sheet:number;sx:number;sy:number;sw:number;sh:number;x:number;y:number;w:number;h:number};
 export const DECOR:Decor[]=[];
 const prop=(sx:number,sy:number,sw:number,sh:number,x:number,y:number,w:number,h:number)=>DECOR.push({sheet:7,sx,sy,sw,sh,x,y,w,h});
+const foliage=(x:number,y:number,w=34,h=51)=>DECOR.push({sheet:10,sx:633,sy:692,sw:69,sh:103,x,y,w,h});
 // Each business gets its own frontage. The central walking axis remains empty.
 BUILDINGS.forEach(b=>{const base=b.y+b.h;prop(8,940,45,93,b.x-24,base+32,30,62);prop(8,940,45,93,b.x+b.w+24,base+32,30,62);});
 for(const [x,y] of [[914,880],[1215,880],[914,1010],[1215,1010]])prop(325,984,93,49,x,y,70,37);
-for(const [x,y] of [[925,825],[1205,825],[925,1045],[1205,1045]])DECOR.push({sheet:10,sx:633,sy:692,sw:69,sh:103,x,y,w:32,h:48});
+for(const [x,y] of [[925,825],[1205,825],[925,1045],[1205,1045]])foliage(x,y,32,48);
 // Trade frontage: signs at the facade, service equipment in a side alley.
 for(const [x,y] of [[1560,1010],[565,630],[1560,625]])prop(235,942,87,90,x,y,49,51);
 for(const [x,y] of [[940,690],[1260,1070]])prop(917,937,111,97,x,y,70,61);
 for(const [x,y] of [[910,1390],[1265,1390]])prop(16,1071,122,79,x,y,90,59);
 for(const [x,y] of [[1560,1370],[565,1380]])prop(651,1080,112,70,x,y,70,44);
 for(const [x,y] of [[1810,460],[2250,960],[1940,1410],[2220,1410]])prop(766,1083,80,68,x,y,68,58);
-// Defined perimeter and eastern checkpoint, with one clear street approach.
+// Defined perimeter with a real eastern gate on the forest road.
 for(let x=35;x<2360;x+=85)for(const y of [72,1680])prop(371,1075,91,75,x+42,y,86,62);
-for(let y=80;y<1680;y+=74)for(const x of [35,2365])prop(375,1080,14,70,x,y,20,76);
+for(let y=80;y<1680;y+=74){
+ prop(375,1080,14,70,35,y,20,76);
+ if(y<600||y>950)prop(375,1080,14,70,2365,y,20,76);
+}
 for(const y of [630,875]){prop(527,985,105,49,1710,y,96,45);prop(8,940,45,93,1710,y+15,32,68);}
 for(const [x,y] of [[520,320],[520,680],[520,1065],[520,1435],[1600,320],[1600,680],[1600,1065],[1600,1435]])prop(8,940,45,93,x,y,32,68);
 // Small furnished pockets in the vacant verges, away from entrances and roads.
 for(const [x,y] of [[310,850],[310,1150],[780,1580],[1380,1580],[1790,300]]){
  prop(325,984,93,49,x,y,70,37);
- for(const dx of [-56,56])DECOR.push({sheet:10,sx:633,sy:692,sw:69,sh:103,x:x+dx,y:y-8,w:34,h:51});
+ for(const dx of [-56,56])foliage(x+dx,y-8);
  prop(8,940,45,93,x+88,y+4,30,62);
 }
 for(const [x,y] of [[200,940],[405,1300],[1780,1120],[2270,340],[2260,1130]]){
@@ -38,3 +42,19 @@ for(const [x,y] of [[200,940],[405,1300],[1780,1120],[2270,340],[2260,1130]]){
 for(const [x,y] of [[270,1420],[1780,1570],[1830,180]]){
  prop(16,1071,122,79,x,y,96,62);prop(917,937,111,97,x+82,y-3,62,54);
 }
+
+// Rusty Woods uses the same authored atlas art as Trash Town rather than placeholder
+// rectangles. Props cluster around landmarks while the main trail remains uncluttered.
+for(const [x,y] of [[2510,650],[2550,850],[2700,470],[2760,1070],[2990,270],[3130,300],[3290,1280],[3470,1120],[3660,700]])foliage(x,y,38,57);
+// Moss camp: salvaged benches, utility posts and supply piles.
+for(const [x,y] of [[2398,680],[2492,680]])prop(325,984,93,49,x,y,62,33);
+for(const [x,y] of [[2380,830],[2535,835]])prop(8,940,45,93,x,y,28,58);
+prop(651,1080,112,70,2430,835,63,40);prop(766,1083,80,68,2490,842,48,41);
+// Whisper Grove: old forest shrine assembled from recovered town objects.
+prop(917,937,111,97,3018,292,62,54);prop(917,937,111,97,3120,292,62,54);
+prop(16,1071,122,79,3058,330,92,59);
+// Rust Hauler wreck: dense scrap composition made from authored salvage sprites.
+prop(16,1071,122,79,3125,1330,105,68);prop(917,937,111,97,3210,1340,72,63);
+prop(651,1080,112,70,3270,1360,68,42);prop(766,1083,80,68,3090,1390,58,49);
+// Ironroot arena markers create a recognizable boss destination without closing it in.
+for(const [x,y] of [[3420,700],[3650,710],[3420,930],[3650,925]])prop(235,942,87,90,x,y,42,44);
