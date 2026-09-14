@@ -106,7 +106,11 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  if(a.type==='heal'&&a.target!=='bandage'&&!next.bandage&&!next.healing&&next.hp>0&&next.hp<playerStats(next).hp&&next.medkits>0&&now>=(next.healCooldownUntil??0)){
  next.healing={startedAt:now,readyAt:now+1500};next.events.push('Applying medkit · 1.5 seconds. Attacking or taking damage interrupts.');
  }
- if(a.type==='craft'&&a.target==='bandage'&&nearService(next,'wrench',140)&&next.scrap>=8){next.scrap-=8;next.bandages=(next.bandages??0)+1;next.events.push('Crafted field bandage · 8 Scrap.');}
+ if(a.type==='craft'&&a.target==='bandage'){
+  if(!nearService(next,'wrench',140))next.events.push('Visit Wrench at the workshop.');
+  else if(next.scrap<8)next.events.push('Needs 8 scrap.');
+  else {next.scrap-=8;next.bandages=(next.bandages??0)+1;next.events.push('Crafted field bandage · 8 Scrap.');}
+ }
  if(a.type==='heal'&&a.target==='bandage'&&!next.healing&&!next.bandage&&next.hp>0&&next.hp<playerStats(next).hp&&(next.bandages??0)>0&&now>=(next.healCooldownUntil??0)){
  next.bandages!--;next.bandage={until:now+6000,remaining:Math.round(playerStats(next).hp*.3),credit:0};next.healCooldownUntil=now+12000;next.events.push('Bandage applied · 30% maximum HP over 6 seconds. Damage interrupts.');
  }else if(next.bandage&&next.hp>0){
@@ -283,5 +287,7 @@ export function lootKey(kind:NonNullable<Monster['kind']>,roll:number,variant:nu
 export function assistAim(s:GameState,dx:number,dy:number,kind=weaponKind(s)){
  const length=Math.hypot(dx,dy)||1;dx/=length;dy/=length;
  const candidates=activeMonsters(s).filter(m=>{const d=Math.hypot(m.x-s.x,m.y-s.y);return m.hp>0&&d<WEAPONS[kind].range&&clearMonsterPath(s,m,s.interior)&&(kind!=='blaster'||d<1||((m.x-s.x)*dx+(m.y-s.y)*dy)/d>=.5)});
- candidates.sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y));const target=candidates[0];if(!target)return {dx,dy};const distance=Math.hypot(target.x-s.x,target.y-s.y);return {dx:distance?(target.x-s.x)/distance:dx,dy:distance?(target.y-s.y)/distance:dy,target:target.id};
+ // Favor the intended direction over a closer enemy behind the player.
+ const score=(m:Monster)=>{const x=m.x-s.x,y=m.y-s.y,d=Math.hypot(x,y);const alignment=d>0?(x*dx+y*dy)/d:1;return d/WEAPONS[kind].range+2*(1-alignment);};
+ candidates.sort((a,b)=>score(a)-score(b)||a.id-b.id);const target=candidates[0];if(!target)return {dx,dy};const distance=Math.hypot(target.x-s.x,target.y-s.y);return {dx:distance?(target.x-s.x)/distance:dx,dy:distance?(target.y-s.y)/distance:dy,target:target.id};
 }
