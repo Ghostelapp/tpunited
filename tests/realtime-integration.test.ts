@@ -47,11 +47,11 @@ test('real Workers WebSockets: shared combat, persistence, chat, sessions and in
   assert.equal(first.players[0].username,'player1');assert.equal(first.players[0].wallet,undefined);
   assert.equal(first.character.adminSkin,false);assert.equal(first.players[0].adminSkin,false);
   await database.prepare("UPDATE registrations SET role='ADMIN' WHERE user_id='player1'").run();
-  await a.wait(m=>m.type==='snapshot'&&m.players[0]?.adminSkin===true);
-  await b.wait(m=>m.type==='snapshot'&&m.character.adminSkin===true);
+  const promotedA=await a.wait(m=>m.type==='snapshot'&&m.players[0]?.adminSkin===true);
+  const promotedB=await b.wait(m=>m.type==='snapshot'&&m.character.adminSkin===true);
   await database.prepare("UPDATE registrations SET role='USER' WHERE user_id='player1'").run();
-  await a.wait(m=>m.type==='snapshot'&&m.players[0]?.adminSkin===false);
-  await b.wait(m=>m.type==='snapshot'&&m.character.adminSkin===false);
+  await a.wait(m=>m.type==='snapshot'&&m.tick>promotedA.tick&&m.players[0]?.adminSkin===false);
+  await b.wait(m=>m.type==='snapshot'&&m.tick>promotedB.tick&&m.character.adminSkin===false);
   const attack={type:'input',seq:1,scene:-1,action:{type:'attack',dx:1,dy:0},motion:[]};
   a.socket.send(JSON.stringify(attack));b.socket.send(JSON.stringify(attack));
   await a.wait(m=>m.ack===1);await b.wait(m=>m.ack===1);
@@ -89,8 +89,15 @@ test('real Workers WebSockets: shared combat, persistence, chat, sessions and in
   const resumed=await again.wait(m=>m.type==='snapshot');
   assert.equal(resumed.character.state.monsters[0].hp,kill.character.state.monsters[0].hp);
   assert.ok(resumed.character.state.scrap>=1000);assert.equal(resumed.ack,0);
-  const invalidClosed=new Promise<number>(resolve=>again.socket.addEventListener('close',event=>resolve(event.code)));
-  again.socket.send(JSON.stringify({...attack,damage:9999}));
+  // A second tab replaces the old connection without losing committed progress.
+  const replaced=new Promise<number>(resolve=>again.socket.addEventListener('close',event=>resolve(event.code)));
+  const replacement=await open(tokens[0]);
+  assert.equal(await Promise.race([replaced,new Promise(r=>setTimeout(()=>r('timeout'),5000))]),4009);
+  const replacementState=await replacement.wait(m=>m.type==='snapshot');
+  assert.ok(replacementState.character.state.scrap>=1000);
+  assert.equal(replacementState.ack,0);
+  const invalidClosed=new Promise<number>(resolve=>replacement.socket.addEventListener('close',event=>resolve(event.code)));
+  replacement.socket.send(JSON.stringify({...attack,damage:9999}));
   assert.equal(await Promise.race([invalidClosed,new Promise(r=>setTimeout(()=>r('timeout'),5000))]),1008);
  }finally{for(const socket of sockets)try{socket.close()}catch{}await mf.dispose();}
 });
