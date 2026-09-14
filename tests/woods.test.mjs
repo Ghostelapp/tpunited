@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
-import {WOODS_LANDMARKS,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsMonsterHealth,woodsMonsterName} from '../packages/game-core/woods.ts';
+import {WOODS_ENCOUNTER_DETAILS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile} from '../packages/game-core/woods.ts';
+import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame} from '../components/tpu/woods-monsters.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
 
 test('forest joins the eastern road and tree trunks block movement',()=>{
@@ -36,6 +37,37 @@ test('forest roster has distinct encounter identities and navigation landmarks',
  assert.ok(WOODS_SPAWNS[5].hp>WOODS_SPAWNS[4].hp);
 });
 
+test('every forest encounter uses a different real monster atlas family',()=>{
+ const profiles=WOODS_SPAWNS.map(m=>woodsMonsterProfile(m.id));
+ assert.ok(profiles.every(Boolean));
+ assert.equal(new Set(profiles.map(p=>p.atlasMonster)).size,7);
+ assert.deepEqual(profiles.map(p=>p.name),['SAP EEL','MIRE HOUND','BRAMBLE BAT','ASH ROACH','RUST WASP','CABLE SERPENT','IRONROOT GOLEM']);
+ assert.equal(Object.keys(WOODS_PROFILES).length,7);
+ assert.equal(WOODS_ENCOUNTER_DETAILS.length,7);
+ assert.equal(new Set(WOODS_ENCOUNTER_DETAILS.map(e=>e.marker)).size,7);
+});
+
+test('forest atlas idle and movement crops stay inside sheet 9 and exclude caption rows',()=>{
+ for(const spawn of WOODS_SPAWNS){
+  const profile=woodsMonsterProfile(spawn.id),entry=WOODS_MONSTER_ATLAS[profile.atlasMonster];
+  const frames=[entry.idle,...entry.move,woodsMonsterAtlasFrame(spawn.id,false,0),woodsMonsterAtlasFrame(spawn.id,true,0)].filter(Boolean);
+  for(const [sx,sy,sw,sh] of frames){
+   assert.ok(sx>=0&&sy>=0&&sw>0&&sh>0);
+   assert.ok(sx+sw<=1254&&sy+sh<=1254,`${profile.name} crop escaped sheet 9`);
+  }
+ }
+});
+
+test('forest species expose tuned salvage bonuses',()=>{
+ const rewards=WOODS_SPAWNS.map(m=>woodsKillReward(m.id));
+ assert.ok(rewards.every(Boolean));
+ assert.equal(new Set(rewards.map(r=>r.label)).size,7);
+ assert.deepEqual(woodsKillReward(20),{scrap:4,circuits:0,xp:3,label:'Sap resin'});
+ assert.deepEqual(woodsKillReward(25),{scrap:4,circuits:2,xp:6,label:'Live cable'});
+ assert.deepEqual(woodsKillReward(26),{scrap:30,circuits:2,xp:25,label:'Ironroot core'});
+ assert.equal(woodsKillReward(999),undefined);
+});
+
 test('world migration adds forest enemies once and preserves existing damage and respawn',()=>{
  const old=initialState().monsters;old[0].hp=7;
  const seeded=seedWoods(old);assert.equal(seeded.length,old.length+7);assert.equal(seeded[0].hp,7);
@@ -50,6 +82,7 @@ test('Moss quest requires proximity, six forest kills and a boss, and pays once'
  s=advance(s,{type:'interact',target:'ranger'},0,100000);assert.equal(s.woodsQuest,undefined);
  s.x=2470;s.y=760;s=advance(s,{type:'interact',target:'ranger'},0,100000);
  assert.equal(s.woodsQuest,'active');
+ assert.match(s.events.join(' '),/Ironroot Golem/);
  let n=advance(s,{type:'interact',target:'ranger'},0,100000);assert.equal(n.scrap,0);
  s.woodsKills=6;s.woodsBoss=true;n=advance(s,{type:'interact',target:'ranger'},0,100000);
  assert.equal(n.woodsQuest,'complete');assert.equal(n.scrap,200);assert.equal(n.xp,200);assert.equal(n.medkits,4);
@@ -65,6 +98,9 @@ test('shared forest boss awards one kill, preserves sewer state, and respawns at
  const players=[...result.players.values()];
  assert.equal(players.reduce((sum,p)=>sum+p.kills,0),1);
  assert.equal(players.filter(p=>p.woodsBoss).length,1);
+ const rewarded=players.find(p=>p.kills===1);
+ assert.equal(rewarded.scrap,42);assert.equal(rewarded.circuits,3);assert.equal(rewarded.xp,45);
+ assert.ok(rewarded.events.some(e=>e.includes('Ironroot core')));
  for(const p of players){assert.equal(p.dungeon.cleared,false);assert.equal(p.legacy.deathless,false);}
  assert.equal(result.monsters[0].respawn,now+120000);
  const next=stepWorld(result.monsters,[{id:'a',state:players[0]}],0,now+120000);
@@ -72,9 +108,11 @@ test('shared forest boss awards one kill, preserves sewer state, and respawns at
  assert.deepEqual(next.players.get('a').monsters,next.monsters);
 });
 
-test('forest creature kills advance only the forest quest',()=>{
+test('forest creature kills advance only the forest quest and pay species salvage',()=>{
  const m={...WOODS_SPAWNS[0],hp:1},now=100000;
  const s={...initialState(),x:m.x-40,y:m.y,quest:'active',woodsQuest:'active',monsters:[m],strike:{at:now,dx:1,dy:0,kind:'blade',damage:30}};
  const n=advance(s,{type:'tick'},0,now);
  assert.equal(n.woodsKills,1);assert.equal(n.questKills,0);
+ assert.equal(n.scrap,16);assert.equal(n.circuits,1);assert.equal(n.xp,23);
+ assert.ok(n.events.some(e=>e.includes('Sap resin')));
 });

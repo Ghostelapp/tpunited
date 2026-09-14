@@ -1,7 +1,72 @@
 // Stable IDs keep shared-world saves compatible across deployments.
 export const WOODS_START=2400;
 
+// Species keys are intentionally stable internal encounter IDs. Player-facing names
+// live in WOODS_PROFILES and can evolve without rewriting shared-world saves.
 export type WoodsSpecies='sap-slime'|'miremaw-ooze'|'bramble-rat'|'ashfang-stalker'|'rust-beetle'|'ironwing-beetle'|'ironroot-guardian';
+export type WoodsEncounterMarker='sap'|'mire'|'bramble'|'ash'|'rust'|'iron'|'root';
+export type WoodsMonsterProfile={
+ name:string;
+ atlasMonster:'sewer-eel'|'junk-hound'|'neon-bat'|'toxic-roach'|'drone-wasp'|'cable-serpent'|'scrap-golem';
+ role:'skirmisher'|'bruiser'|'ambusher'|'charger'|'tank'|'boss';
+ marker:WoodsEncounterMarker;
+ accent:string;
+ shadow:string;
+ filter:string;
+ scale:number;
+ habitat:string;
+ behavior:string;
+ lootHint:string;
+};
+export type WoodsKillReward={scrap:number;circuits:number;xp:number;label:string};
+
+export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
+ 'sap-slime':{
+  name:'SAP EEL',atlasMonster:'sewer-eel',role:'skirmisher',marker:'sap',accent:'#63c9b8',shadow:'#203b32',
+  filter:'saturate(1.08) hue-rotate(5deg)',scale:.94,
+  habitat:'Mossy runoff pools',behavior:'Quick forest eel that pressures the player around wet ground.',lootHint:'Resin, wire and light salvage',
+ },
+ 'miremaw-ooze':{
+  name:'MIRE HOUND',atlasMonster:'junk-hound',role:'bruiser',marker:'mire',accent:'#d06a58',shadow:'#3c2824',
+  filter:'saturate(1.06) brightness(.96)',scale:1.02,
+  habitat:'Deep violet mire',behavior:'Heavier feral machine that controls a wider danger footprint.',lootHint:'Hardened scrap and circuit fragments',
+ },
+ 'bramble-rat':{
+  name:'BRAMBLE BAT',atlasMonster:'neon-bat',role:'ambusher',marker:'bramble',accent:'#d55ac7',shadow:'#35213a',
+  filter:'saturate(1.12) hue-rotate(5deg)',scale:.94,
+  habitat:'Bramble canopies',behavior:'Fast aerial ambusher that dives through narrow clearings.',lootHint:'Light wire and charged salvage',
+ },
+ 'ashfang-stalker':{
+  name:'ASH ROACH',atlasMonster:'toxic-roach',role:'charger',marker:'ash',accent:'#9ccf46',shadow:'#303820',
+  filter:'saturate(1.08) brightness(.95)',scale:.98,
+  habitat:'Charred undergrowth',behavior:'Aggressive crawler that rushes from scorched cover.',lootHint:'Toxic residue and plated salvage',
+ },
+ 'rust-beetle':{
+  name:'RUST WASP',atlasMonster:'drone-wasp',role:'tank',marker:'rust',accent:'#d68b3b',shadow:'#3e2d20',
+  filter:'saturate(1.08) contrast(1.04)',scale:1,
+  habitat:'Collapsed machine nests',behavior:'Armored flying drone with a punishing close-range burst.',lootHint:'Mechanical scrap and drone parts',
+ },
+ 'ironwing-beetle':{
+  name:'CABLE SERPENT',atlasMonster:'cable-serpent',role:'charger',marker:'iron',accent:'#b85fc8',shadow:'#32263b',
+  filter:'saturate(1.12) brightness(.98)',scale:1.05,
+  habitat:'Magnetized wreckage',behavior:'Long electrified scavenger that coils around old machinery.',lootHint:'Circuits and reinforced components',
+ },
+ 'ironroot-guardian':{
+  name:'IRONROOT GOLEM',atlasMonster:'scrap-golem',role:'boss',marker:'root',accent:'#c8a84f',shadow:'#2c2718',
+  filter:'sepia(.08) saturate(1.05) contrast(1.04)',scale:1.16,
+  habitat:'Ironroot Grove',behavior:'Ancient scrap colossus with a telegraphed ground slam.',lootHint:'Guaranteed boss-grade equipment roll',
+ },
+};
+
+const WOODS_REWARDS:Record<WoodsSpecies,WoodsKillReward>={
+ 'sap-slime':{scrap:4,circuits:0,xp:3,label:'Sap resin'},
+ 'miremaw-ooze':{scrap:6,circuits:0,xp:4,label:'Hardened plating'},
+ 'bramble-rat':{scrap:2,circuits:1,xp:4,label:'Charged wire'},
+ 'ashfang-stalker':{scrap:5,circuits:0,xp:4,label:'Toxic carapace'},
+ 'rust-beetle':{scrap:4,circuits:1,xp:5,label:'Drone parts'},
+ 'ironwing-beetle':{scrap:4,circuits:2,xp:6,label:'Live cable'},
+ 'ironroot-guardian':{scrap:30,circuits:2,xp:25,label:'Ironroot core'},
+};
 
 export const WOODS_SPAWNS=[
  {id:20,x:2780,y:540,kind:'slime',species:'sap-slime',hp:120,respawn:0},
@@ -34,19 +99,25 @@ export const WOODS_LANDMARKS=[
  {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},
 ] as const;
 
-const SPECIES_NAMES:Record<WoodsSpecies,string>={
- 'sap-slime':'SAP SLIME',
- 'miremaw-ooze':'MIREMAW OOZE',
- 'bramble-rat':'BRAMBLE RAT',
- 'ashfang-stalker':'ASHFANG STALKER',
- 'rust-beetle':'RUST BEETLE',
- 'ironwing-beetle':'IRONWING BEETLE',
- 'ironroot-guardian':'IRONROOT GUARDIAN',
-};
+export const WOODS_ENCOUNTER_DETAILS=WOODS_SPAWNS.map((spawn,index)=>({
+ id:`encounter-${spawn.id}`,
+ monsterId:spawn.id,
+ x:spawn.x,
+ y:spawn.y,
+ radius:spawn.kind==='boss'?150:52+(index%3)*8,
+ marker:WOODS_PROFILES[spawn.species].marker,
+ accent:WOODS_PROFILES[spawn.species].accent,
+})) as readonly {
+ id:string;monsterId:number;x:number;y:number;radius:number;marker:WoodsEncounterMarker;accent:string;
+}[];
 
 export function isWoodsMonster(id:number){return WOODS_SPAWNS.some(m=>m.id===id);}
 export function woodsMonsterHealth(id:number){return WOODS_SPAWNS.find(m=>m.id===id)?.hp??120;}
-export function woodsMonsterName(id:number){const m=WOODS_SPAWNS.find(m=>m.id===id);return m?SPECIES_NAMES[m.species]:'FOREST CREATURE';}
+export function woodsMonsterProfile(id:number):WoodsMonsterProfile|undefined{const m=WOODS_SPAWNS.find(m=>m.id===id);return m?WOODS_PROFILES[m.species]:undefined;}
+export function woodsMonsterName(id:number){return woodsMonsterProfile(id)?.name??'FOREST CREATURE';}
+export function woodsMonsterFilter(id:number){return woodsMonsterProfile(id)?.filter??'none';}
+export function woodsMonsterScale(id:number){return woodsMonsterProfile(id)?.scale??1;}
+export function woodsKillReward(id:number):WoodsKillReward|undefined{const m=WOODS_SPAWNS.find(m=>m.id===id);return m?WOODS_REWARDS[m.species]:undefined;}
 // Only add missing IDs; never restore a defeated enemy or overwrite its cooldown.
 export function seedWoods<T extends {id:number}>(monsters:T[]):(T|typeof WOODS_SPAWNS[number])[]{
  const ids=new Set(monsters.map(m=>m.id));
