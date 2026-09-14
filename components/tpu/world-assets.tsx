@@ -22,9 +22,12 @@ for(const [x,y] of [[940,690],[1260,1070]])prop(917,937,111,97,x,y,70,61);
 for(const [x,y] of [[910,1390],[1265,1390]])prop(16,1071,122,79,x,y,90,59);
 for(const [x,y] of [[1560,1370],[565,1380]])prop(651,1080,112,70,x,y,70,44);
 for(const [x,y] of [[1810,460],[2250,960],[1940,1410],[2220,1410]])prop(766,1083,80,68,x,y,68,58);
-// Defined perimeter and eastern checkpoint, with one clear street approach.
+// Defined perimeter with a real eastern gate on the forest road.
 for(let x=35;x<2360;x+=85)for(const y of [72,1680])prop(371,1075,91,75,x+42,y,86,62);
-for(let y=80;y<1680;y+=74)for(const x of [35,2365])prop(375,1080,14,70,x,y,20,76);
+for(let y=80;y<1680;y+=74){
+ prop(375,1080,14,70,35,y,20,76);
+ if(y<600||y>950)prop(375,1080,14,70,2365,y,20,76);
+}
 for(const y of [630,875]){prop(527,985,105,49,1710,y,96,45);prop(8,940,45,93,1710,y+15,32,68);}
 for(const [x,y] of [[520,320],[520,680],[520,1065],[520,1435],[1600,320],[1600,680],[1600,1065],[1600,1435]])prop(8,940,45,93,x,y,32,68);
 // Small furnished pockets in the vacant verges, away from entrances and roads.
