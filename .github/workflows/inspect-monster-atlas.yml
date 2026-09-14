@@ -1,0 +1,14 @@
+name: Inspect monster atlas
+on:
+  push:
+    branches: [feat/rusty-woods-content-pass]
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monster-atlas
+          path: public/assets/sheet-9.png
+          if-no-files-found: error
