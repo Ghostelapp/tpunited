@@ -1,10 +1,13 @@
 // Stable IDs keep shared-world saves compatible across deployments.
 export const WOODS_START=2400;
 
+// Species keys are intentionally stable internal encounter IDs. Player-facing names
+// live in WOODS_PROFILES and can evolve without rewriting shared-world saves.
 export type WoodsSpecies='sap-slime'|'miremaw-ooze'|'bramble-rat'|'ashfang-stalker'|'rust-beetle'|'ironwing-beetle'|'ironroot-guardian';
 export type WoodsEncounterMarker='sap'|'mire'|'bramble'|'ash'|'rust'|'iron'|'root';
 export type WoodsMonsterProfile={
  name:string;
+ atlasMonster:'sewer-eel'|'junk-hound'|'neon-bat'|'toxic-roach'|'drone-wasp'|'cable-serpent'|'scrap-golem';
  role:'skirmisher'|'bruiser'|'ambusher'|'charger'|'tank'|'boss';
  marker:WoodsEncounterMarker;
  accent:string;
@@ -18,39 +21,39 @@ export type WoodsMonsterProfile={
 
 export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
  'sap-slime':{
-  name:'SAP SLIME',role:'skirmisher',marker:'sap',accent:'#82c65d',shadow:'#203b28',
-  filter:'hue-rotate(18deg) saturate(1.35) brightness(.96)',scale:.98,
-  habitat:'Mossy runoff pools',behavior:'Keeps pressure with short corrosive bursts.',lootHint:'Sticky resin and light salvage',
+  name:'SAP EEL',atlasMonster:'sewer-eel',role:'skirmisher',marker:'sap',accent:'#63c9b8',shadow:'#203b32',
+  filter:'saturate(1.08) hue-rotate(5deg)',scale:.94,
+  habitat:'Mossy runoff pools',behavior:'Quick forest eel that pressures the player around wet ground.',lootHint:'Resin, wire and light salvage',
  },
  'miremaw-ooze':{
-  name:'MIREMAW OOZE',role:'bruiser',marker:'mire',accent:'#a56ad1',shadow:'#302240',
-  filter:'hue-rotate(282deg) saturate(1.45) brightness(.88)',scale:1.12,
-  habitat:'Deep violet mire',behavior:'Slower, heavier ooze with a wider danger footprint.',lootHint:'Toxic residue and circuit scrap',
+  name:'MIRE HOUND',atlasMonster:'junk-hound',role:'bruiser',marker:'mire',accent:'#d06a58',shadow:'#3c2824',
+  filter:'saturate(1.06) brightness(.96)',scale:1.02,
+  habitat:'Deep violet mire',behavior:'Heavier feral machine that controls a wider danger footprint.',lootHint:'Hardened scrap and circuit fragments',
  },
  'bramble-rat':{
-  name:'BRAMBLE RAT',role:'ambusher',marker:'bramble',accent:'#a7b95e',shadow:'#31351f',
-  filter:'sepia(.35) hue-rotate(28deg) saturate(1.25)',scale:.94,
-  habitat:'Bramble dens',behavior:'Fast darting attacker that fights around roots and brush.',lootHint:'Wire, teeth and scavenged scrap',
+  name:'BRAMBLE BAT',atlasMonster:'neon-bat',role:'ambusher',marker:'bramble',accent:'#d55ac7',shadow:'#35213a',
+  filter:'saturate(1.12) hue-rotate(5deg)',scale:.94,
+  habitat:'Bramble canopies',behavior:'Fast aerial ambusher that dives through narrow clearings.',lootHint:'Light wire and charged salvage',
  },
  'ashfang-stalker':{
-  name:'ASHFANG STALKER',role:'charger',marker:'ash',accent:'#d47752',shadow:'#40251f',
-  filter:'sepia(.55) hue-rotate(330deg) saturate(1.55) brightness(.9)',scale:1.04,
-  habitat:'Charred undergrowth',behavior:'Aggressive stalker built around sudden rushes.',lootHint:'Burnt components and sharp salvage',
+  name:'ASH ROACH',atlasMonster:'toxic-roach',role:'charger',marker:'ash',accent:'#9ccf46',shadow:'#303820',
+  filter:'saturate(1.08) brightness(.95)',scale:.98,
+  habitat:'Charred undergrowth',behavior:'Aggressive crawler that rushes from scorched cover.',lootHint:'Toxic residue and plated salvage',
  },
  'rust-beetle':{
-  name:'RUST BEETLE',role:'tank',marker:'rust',accent:'#c97842',shadow:'#3f2e20',
-  filter:'sepia(.7) saturate(1.65) brightness(.92)',scale:1.02,
-  habitat:'Collapsed machine nests',behavior:'Armored close-range defender with a punishing burst.',lootHint:'Rust plates and mechanical scrap',
+  name:'RUST WASP',atlasMonster:'drone-wasp',role:'tank',marker:'rust',accent:'#d68b3b',shadow:'#3e2d20',
+  filter:'saturate(1.08) contrast(1.04)',scale:1,
+  habitat:'Collapsed machine nests',behavior:'Armored flying drone with a punishing close-range burst.',lootHint:'Mechanical scrap and drone parts',
  },
  'ironwing-beetle':{
-  name:'IRONWING BEETLE',role:'charger',marker:'iron',accent:'#79b7c6',shadow:'#26363c',
-  filter:'saturate(.75) hue-rotate(145deg) brightness(1.08) contrast(1.12)',scale:1.1,
-  habitat:'Magnetized wreckage',behavior:'Heavier beetle variant with an energized metallic shell.',lootHint:'Circuits and reinforced components',
+  name:'CABLE SERPENT',atlasMonster:'cable-serpent',role:'charger',marker:'iron',accent:'#b85fc8',shadow:'#32263b',
+  filter:'saturate(1.12) brightness(.98)',scale:1.05,
+  habitat:'Magnetized wreckage',behavior:'Long electrified scavenger that coils around old machinery.',lootHint:'Circuits and reinforced components',
  },
  'ironroot-guardian':{
-  name:'IRONROOT GUARDIAN',role:'boss',marker:'root',accent:'#c8a84f',shadow:'#2c2718',
-  filter:'sepia(.35) hue-rotate(28deg) saturate(1.3) contrast(1.08)',scale:1.18,
-  habitat:'Ironroot Grove',behavior:'Ancient forest machine with a telegraphed ground slam.',lootHint:'Guaranteed boss-grade equipment roll',
+  name:'IRONROOT GOLEM',atlasMonster:'scrap-golem',role:'boss',marker:'root',accent:'#c8a84f',shadow:'#2c2718',
+  filter:'sepia(.08) saturate(1.05) contrast(1.04)',scale:1.16,
+  habitat:'Ironroot Grove',behavior:'Ancient scrap colossus with a telegraphed ground slam.',lootHint:'Guaranteed boss-grade equipment roll',
  },
 };
 
