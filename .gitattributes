@@ -1,0 +1,5 @@
+
+# Generated documents and atlases are binary artifacts.
+*.pdf binary
+*.png binary
+*.webp binary

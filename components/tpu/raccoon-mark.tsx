@@ -1,0 +1,2 @@
+/** The trash panda is a raccoon: pointed muzzle and a continuous bandit mask. */
+export default function RaccoonMark({size=34}:{size?:number}){return <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M10 27 8 7 24 17 40 17 56 7 54 27 61 36 43 49 32 59 21 49 3 36Z" fill="currentColor"/><path d="m14 25-2-11 10 8m28 3 2-11-10 8" fill="#65767c"/><path d="m7 35 16-10 9 5 9-5 16 10-16 10-9-5-9 5Z" fill="#101a20"/><path d="m19 34 6-1-2 5-4-1m26-3-6-1 2 5 4-1" fill="#c8f76b"/><path d="m25 45 7-4 7 4-7 8Z" fill="#101a20"/></svg>}

@@ -154,7 +154,7 @@ export class SharedWorld {
    }
    await db().batch(statements);
    this.failures=0;this.tickNumber++;
-   const peers=active.map(c=>{const s=result.players.get(c.id)!;return {adminSkin:rows.results.find(p=>p.user_id===c.id)?.role==='ADMIN',username:c.username,x:s.x,y:s.y,interior:s.interior,title:legacyTitle(s),hp:s.hp,maxHp:playerStats(s).hp,lastAttack:s.lastAttack};});
+   const peers=active.map(c=>{const s=result.players.get(c.id)!;return {adminSkin:['ADMIN','SUPER_ADMIN'].includes(rows.results.find(p=>p.user_id===c.id)?.role??''),username:c.username,x:s.x,y:s.y,interior:s.interior,title:legacyTitle(s),hp:s.hp,maxHp:playerStats(s).hp,lastAttack:s.lastAttack};});
    for(const c of active){
     const input=inputs.get(c.id),previous=before.get(c.id)!,state=result.players.get(c.id)!;
     const reset=!!input&&input.scene!==(previous.interior??-1)||state.interior!==previous.interior||state.events.some(e=>e.startsWith('Rescued'));
@@ -162,7 +162,7 @@ export class SharedWorld {
     const wire=structuredClone(state);
     for(const m of [...wire.monsters,...wire.dungeon?.monsters??[]]){delete m.navPath;delete m.navGoal;delete m.navAt;}
     const hits=state.interior===undefined?active.flatMap(p=>result.players.get(p.id)!.interior===undefined?result.players.get(p.id)!.hits??[]:[]):state.hits??[];
-    const snapshot:Snapshot={type:'snapshot',tick:this.tickNumber,time:now,ack:c.ack,reset,online:active.length,character:{adminSkin:rows.results.find(p=>p.user_id===c.id)?.role==='ADMIN',username:c.username,state:wire,revision:rows.results.find(p=>p.user_id===c.id)!.revision+1},players:peers.filter(p=>p.username!==c.username&&state.interior!==11&&p.interior===state.interior),hits};
+    const snapshot:Snapshot={type:'snapshot',tick:this.tickNumber,time:now,ack:c.ack,reset,online:active.length,character:{adminSkin:['ADMIN','SUPER_ADMIN'].includes(rows.results.find(p=>p.user_id===c.id)?.role??''),username:c.username,state:wire,revision:rows.results.find(p=>p.user_id===c.id)!.revision+1},players:peers.filter(p=>p.username!==c.username&&state.interior!==11&&p.interior===state.interior),hits};
     this.send(c,snapshot);
    }
   }catch(e){
