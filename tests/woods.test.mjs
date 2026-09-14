@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
-import {WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsMonsterHealth} from '../packages/game-core/woods.ts';
+import {WOODS_LANDMARKS,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsMonsterHealth,woodsMonsterName} from '../packages/game-core/woods.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
 
 test('forest joins the eastern road and tree trunks block movement',()=>{
@@ -25,6 +25,15 @@ test('forest transition keeps a broad playable corridor from town to the first c
 test('forest groves leave spawn points and ranger camp usable',()=>{
  const safePoints=[[2470,760],[2780,540],[2880,980],[3040,480],[3090,1160],[3310,530],[3370,1150],[3540,820]];
  for(const [x,y] of safePoints)assert.equal(blocked(x,y),false,`important forest point blocked at ${x},${y}`);
+});
+
+test('forest roster has distinct encounter identities and navigation landmarks',()=>{
+ assert.equal(WOODS_SPAWNS.length,7);
+ assert.equal(new Set(WOODS_SPAWNS.map(m=>m.species)).size,7);
+ assert.equal(new Set(WOODS_SPAWNS.map(m=>woodsMonsterName(m.id))).size,7);
+ assert.deepEqual(WOODS_LANDMARKS.map(l=>l.id),['trail-camp','whisper-grove','rust-wreck','ironroot']);
+ assert.ok(WOODS_SPAWNS[1].hp>WOODS_SPAWNS[0].hp);
+ assert.ok(WOODS_SPAWNS[5].hp>WOODS_SPAWNS[4].hp);
 });
 
 test('world migration adds forest enemies once and preserves existing damage and respawn',()=>{
