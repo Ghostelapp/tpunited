@@ -1,4 +1,4 @@
-import {woodsMonsterProfile} from '@/packages/game-core/woods';
+import {woodsMonsterProfile} from '../../packages/game-core/woods.ts';
 
 export const WOODS_MONSTER_SHEET=9;
 type Frame=readonly [sx:number,sy:number,sw:number,sh:number];
