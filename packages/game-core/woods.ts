@@ -18,6 +18,7 @@ export type WoodsMonsterProfile={
  behavior:string;
  lootHint:string;
 };
+export type WoodsKillReward={scrap:number;circuits:number;xp:number;label:string};
 
 export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
  'sap-slime':{
@@ -55,6 +56,16 @@ export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
   filter:'sepia(.08) saturate(1.05) contrast(1.04)',scale:1.16,
   habitat:'Ironroot Grove',behavior:'Ancient scrap colossus with a telegraphed ground slam.',lootHint:'Guaranteed boss-grade equipment roll',
  },
+};
+
+const WOODS_REWARDS:Record<WoodsSpecies,WoodsKillReward>={
+ 'sap-slime':{scrap:4,circuits:0,xp:3,label:'Sap resin'},
+ 'miremaw-ooze':{scrap:6,circuits:0,xp:4,label:'Hardened plating'},
+ 'bramble-rat':{scrap:2,circuits:1,xp:4,label:'Charged wire'},
+ 'ashfang-stalker':{scrap:5,circuits:0,xp:4,label:'Toxic carapace'},
+ 'rust-beetle':{scrap:4,circuits:1,xp:5,label:'Drone parts'},
+ 'ironwing-beetle':{scrap:4,circuits:2,xp:6,label:'Live cable'},
+ 'ironroot-guardian':{scrap:30,circuits:2,xp:25,label:'Ironroot core'},
 };
 
 export const WOODS_SPAWNS=[
@@ -106,6 +117,7 @@ export function woodsMonsterProfile(id:number):WoodsMonsterProfile|undefined{con
 export function woodsMonsterName(id:number){return woodsMonsterProfile(id)?.name??'FOREST CREATURE';}
 export function woodsMonsterFilter(id:number){return woodsMonsterProfile(id)?.filter??'none';}
 export function woodsMonsterScale(id:number){return woodsMonsterProfile(id)?.scale??1;}
+export function woodsKillReward(id:number):WoodsKillReward|undefined{const m=WOODS_SPAWNS.find(m=>m.id===id);return m?WOODS_REWARDS[m.species]:undefined;}
 // Only add missing IDs; never restore a defeated enemy or overwrite its cooldown.
 export function seedWoods<T extends {id:number}>(monsters:T[]):(T|typeof WOODS_SPAWNS[number])[]{
  const ids=new Set(monsters.map(m=>m.id));
