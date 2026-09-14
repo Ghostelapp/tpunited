@@ -8,7 +8,7 @@
   "summary": "Trash Panda United is a browser-based pixel-cyberpunk RPG in development, combining exploration, instanced combat, crafting and player parcels with a Base-oriented ownership layer. The testnet phase is where players help shape the game, test its economy and compete under published seasonal rules.",
   "chapters": [
     {
-      "id": "world", "number": "01", "title": "Small panda. Big world.", "eyebrow": "THE GAME / CURRENT ALPHA", "lead": "Trash Town is a starting point: a place to recover, meet other scavengers and prepare for the next trip beyond the neon.",
+      "id": "world", "number": "01", "title": "Small raccoon. Big world.", "eyebrow": "THE GAME / CURRENT ALPHA", "lead": "Trash Town is a starting point: a place to recover, meet other scavengers and prepare for the next trip beyond the neon.",
       "blocks": [
         {"title": "A game worth returning to", "text": "The project is built around a repeatable adventure: leave the safety of town, take on a task, recover resources and use them to improve your next run. Progress should come from learning the world and making useful choices. Blockchain ownership supports selected assets; it does not replace the moment-to-moment game."},
         {"title": "What the alpha contains", "text": "The codebase includes Trash Town, NPC services and interiors, mutant enemies, the Toxic Sewers solo dungeon and the Garbage King boss. Players can complete quests and daily contracts, search salvage caches, collect equipment, craft medkits and upgrade their starter blade. Keyboard, click-to-walk and touch controls are supported."},

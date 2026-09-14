@@ -13,6 +13,6 @@ export async function POST(req:Request){try{
  if(!written.meta.changes)throw new HttpError('Please wait before refreshing presence.',429);
  // Read current privacy on every request; revoked guests disappear immediately from new snapshots.
  const rows=await db().prepare("SELECT r.username,r.role,p.x,p.y,json_extract(g.state,'$.legacy.title') AS titleId,json_extract(g.state,'$.legacy.claimed') AS claims FROM parcel_presence p JOIN registrations r ON r.user_id=p.user_id JOIN account_wallets w ON w.user_id=p.user_id LEFT JOIN players g ON g.user_id=p.user_id WHERE p.parcel=? AND p.version=? AND p.updated_at>? AND p.user_id<>? AND r.status='active' AND (?='public' OR lower(w.address)=? OR (?='invited' AND EXISTS(SELECT 1 FROM json_each(?) WHERE value=p.user_id))) ORDER BY p.updated_at DESC LIMIT 30").bind(b.parcel,a.version,now-10000,user,a.home.visibility,a.home.owner.toLowerCase(),a.home.visibility,a.home.guests).all<{role:string;username:string;x:number;y:number;titleId:string|null;claims:string|null}>();
- return json({players:rows.results.map(p=>({adminSkin:p.role==='ADMIN',username:p.username,x:p.x,y:p.y,title:p.titleId&&JSON.parse(p.claims??'{}')[p.titleId]!==undefined?LEGACY.find(q=>q.id===p.titleId)?.title:undefined}))});
+ return json({players:rows.results.map(p=>({adminSkin:['ADMIN','SUPER_ADMIN'].includes(p.role),username:p.username,x:p.x,y:p.y,title:p.titleId&&JSON.parse(p.claims??'{}')[p.titleId]!==undefined?LEGACY.find(q=>q.id===p.titleId)?.title:undefined}))});
 }catch(e){return fail(e)}}
 

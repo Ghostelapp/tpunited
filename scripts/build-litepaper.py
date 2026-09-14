@@ -20,7 +20,8 @@ for name,file in [('Body','DejaVuSans.ttf'),('Bold','DejaVuSans-Bold.ttf'),('Mon
  pdfmetrics.registerFont(TTFont(name,'/usr/share/fonts/truetype/dejavu/'+file))
 W,H=595.28,841.89
 BG='#091218';PANEL='#10232b';LINE='#2c4951';WHITE='#eef2df';MUTED='#a5b9bd';LIME='#c8f76b';PINK='#ed368e';CYAN='#54d9df'
-C=canvas.Canvas(str(OUT),pagesize=(W,H),pageCompression=1)
+TEMP=OUT.with_suffix('.pdf.tmp')
+C=canvas.Canvas(str(TEMP),pagesize=(W,H),pageCompression=1)
 C.setTitle('Trash Panda United | Litepaper v0.1 | Testnet Field Guide')
 C.setAuthor('Trash Panda United');C.setSubject('Game, economy, ownership and testnet roadmap')
 
@@ -69,7 +70,11 @@ def sprite(sheet,box,x,y,w,h):
  C.drawImage(image,x+(w-iw*scale)/2,H-y-ih*scale,width=iw*scale,height=ih*scale,mask='auto')
 def equipment(asset,x,y,w,h):
  svg=(ROOT/'public/assets/equipment'/f'{asset}.svg').read_text()
- image=ImageReader(io.BytesIO(base64.b64decode(re.search(r'data:image/png;base64,([^\"]+)',svg).group(1))))
+ # Equipment SVGs embed the full current atlas and retain their original viewport.
+ match=re.search(r'data:image/(?:png|webp);base64,([^\"]+)',svg)
+ source=Image.open(io.BytesIO(base64.b64decode(match.group(1))))
+ x0,y0,sw,sh=map(int,re.findall(r'viewBox="([^\"]+)"',svg)[1].split())
+ image=ImageReader(source if source.size==(sw,sh) else source.crop((x0,y0,x0+sw,y0+sh)))
  iw,ih=image.getSize();scale=min(w/iw,h/ih)
  C.drawImage(image,x+(w-iw*scale)/2,H-y-ih*scale,width=iw*scale,height=ih*scale,mask='auto')
 def city_banner(y,h):
@@ -85,8 +90,8 @@ def city_banner(y,h):
 base(1,'Welcome to the wasteland')
 pill('TESTNET FIELD GUIDE',44,83)
 txt('TRASH',40,129,66,'Bold');txt('PANDA',40,197,66,'Bold');txt('UNITED',40,265,66,'Bold',PINK)
-sprite(1,(15,204,115,155),421,151,133,184)
-txt('PANDA SCAVENGER',422,344,7,'Mono',CYAN)
+sprite(1,(356,202,125,158),421,151,133,184)
+txt('RACCOON SCAVENGER',422,344,7,'Mono',CYAN)
 txt('A BROKEN WORLD.',44,357,16,'Mono',WHITE);txt('A FRESH START.',44,380,16,'Mono',LIME)
 city_banner(426,224)
 rect(44,609,229,29,LIME);txt('SCAVENGE / BUILD / BELONG',54,618,9,'Mono',BG)
@@ -101,7 +106,7 @@ for n,ch in enumerate(D['chapters'],2):
  if kind=='world':
   para(D['statusNote'],44,218,507,7.3,MUTED,10)
   rect(44,258,507,143,PANEL,LINE)
-  sprite(1,(15,204,115,155),73,267,108,100)
+  sprite(1,(356,202,125,158),73,267,108,100)
   sprite(4,(302,102,309,340),241,266,112,101)
   sprite(2,(14,987,278,211),403,273,127,94)
   txt('THE SCAVENGER',80,380,8,'Mono',LIME);txt('SCRAP HOUSE',264,380,8,'Mono',CYAN);txt('GARBAGE KING',415,380,8,'Mono',PINK)
@@ -111,7 +116,7 @@ for n,ch in enumerate(D['chapters'],2):
   labels=['EXPLORE','FIGHT','SALVAGE','UPGRADE','RETURN']
   for i,label in enumerate(labels):
    x=44+i*104;rect(x,262,91,118,PANEL,LINE);txt('0'+str(i+1),x+8,270,9,'Mono',LIME);txt(label,x+9,360,8,'Mono',WHITE)
-   if i==0:sprite(1,(15,204,115,155),x+15,286,61,66)
+   if i==0:sprite(1,(356,202,125,158),x+15,286,61,66)
    elif i==1:sprite(2,(282,47,146,94),x+9,293,73,54)
    elif i==2:equipment('neon-blaster',x+10,287,71,62)
    elif i==3:equipment('scavenger-hood',x+12,287,68,62)
@@ -159,4 +164,4 @@ for n,ch in enumerate(D['chapters'],2):
    txt(label,x,717,9,'Mono',CYAN);C.linkURL(url,(x,H-735,x+120,H-712),relative=0)
   para('Edition 0.1 / '+D['date']+'. '+D['sourceNote'],44,756,507,6.6,MUTED,8.8)
  C.showPage()
-C.save();print(OUT)
+C.save();TEMP.replace(OUT);print(OUT)
