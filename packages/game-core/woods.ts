@@ -24,37 +24,37 @@ export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
  'sap-slime':{
   name:'SAP EEL',atlasMonster:'sewer-eel',role:'skirmisher',marker:'sap',accent:'#63c9b8',shadow:'#203b32',
   filter:'saturate(1.08) hue-rotate(5deg)',scale:.94,
-  habitat:'Mossy runoff pools',behavior:'Quick forest eel that pressures the player around wet ground.',lootHint:'Resin, wire and light salvage',
+  habitat:'Mossy runoff pools',behavior:'Keeps a short gap and marks the player with a delayed Sap Shock pool.',lootHint:'Resin, wire and light salvage',
  },
  'miremaw-ooze':{
   name:'MIRE HOUND',atlasMonster:'junk-hound',role:'bruiser',marker:'mire',accent:'#d06a58',shadow:'#3c2824',
   filter:'saturate(1.06) brightness(.96)',scale:1.02,
-  habitat:'Deep violet mire',behavior:'Heavier feral machine that controls a wider danger footprint.',lootHint:'Hardened scrap and circuit fragments',
+  habitat:'Deep violet mire',behavior:'Telegraphs a straight Mire Charge, then lunges into the marked impact zone.',lootHint:'Hardened scrap and circuit fragments',
  },
  'bramble-rat':{
   name:'BRAMBLE BAT',atlasMonster:'neon-bat',role:'ambusher',marker:'bramble',accent:'#d55ac7',shadow:'#35213a',
   filter:'saturate(1.12) hue-rotate(5deg)',scale:.94,
-  habitat:'Bramble canopies',behavior:'Fast aerial ambusher that dives through narrow clearings.',lootHint:'Light wire and charged salvage',
+  habitat:'Bramble canopies',behavior:'Fastest forest hunter; commits to a short Bramble Dive that rewards lateral dodges.',lootHint:'Light wire and charged salvage',
  },
  'ashfang-stalker':{
   name:'ASH ROACH',atlasMonster:'toxic-roach',role:'charger',marker:'ash',accent:'#9ccf46',shadow:'#303820',
   filter:'saturate(1.08) brightness(.95)',scale:.98,
-  habitat:'Charred undergrowth',behavior:'Aggressive crawler that rushes from scorched cover.',lootHint:'Toxic residue and plated salvage',
+  habitat:'Charred undergrowth',behavior:'Holds medium range and spits at a delayed target circle instead of body-checking the player.',lootHint:'Toxic residue and plated salvage',
  },
  'rust-beetle':{
   name:'RUST WASP',atlasMonster:'drone-wasp',role:'tank',marker:'rust',accent:'#d68b3b',shadow:'#3e2d20',
   filter:'saturate(1.08) contrast(1.04)',scale:1,
-  habitat:'Collapsed machine nests',behavior:'Armored flying drone with a punishing close-range burst.',lootHint:'Mechanical scrap and drone parts',
+  habitat:'Collapsed machine nests',behavior:'Maintains long range and fires a narrow Rust Burst into a small marked impact zone.',lootHint:'Mechanical scrap and drone parts',
  },
  'ironwing-beetle':{
   name:'CABLE SERPENT',atlasMonster:'cable-serpent',role:'charger',marker:'iron',accent:'#b85fc8',shadow:'#32263b',
   filter:'saturate(1.12) brightness(.98)',scale:1.05,
-  habitat:'Magnetized wreckage',behavior:'Long electrified scavenger that coils around old machinery.',lootHint:'Circuits and reinforced components',
+  habitat:'Magnetized wreckage',behavior:'Controls nearby space with a wide Cable Storm ring that forces the player to disengage.',lootHint:'Circuits and reinforced components',
  },
  'ironroot-guardian':{
   name:'IRONROOT GOLEM',atlasMonster:'scrap-golem',role:'boss',marker:'root',accent:'#c8a84f',shadow:'#2c2718',
   filter:'sepia(.08) saturate(1.05) contrast(1.04)',scale:1.16,
-  habitat:'Ironroot Grove',behavior:'Ancient scrap colossus with a telegraphed ground slam.',lootHint:'Guaranteed boss-grade equipment roll',
+  habitat:'Ironroot Grove',behavior:'Three-phase boss: faster ground slams and targeted root eruptions unlock as health falls.',lootHint:'Guaranteed boss-grade equipment roll',
  },
 };
 
