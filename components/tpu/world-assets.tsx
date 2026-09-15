@@ -43,18 +43,4 @@ for(const [x,y] of [[270,1420],[1780,1570],[1830,180]]){
  prop(16,1071,122,79,x,y,96,62);prop(917,937,111,97,x+82,y-3,62,54);
 }
 
-// Rusty Woods uses the same authored atlas art as Trash Town rather than placeholder
-// rectangles. Props cluster around landmarks while the main trail remains uncluttered.
-for(const [x,y] of [[2510,650],[2550,850],[2700,470],[2760,1070],[2990,270],[3130,300],[3290,1280],[3470,1120],[3660,700]])foliage(x,y,38,57);
-// Moss camp: salvaged benches, utility posts and supply piles.
-for(const [x,y] of [[2398,680],[2492,680]])prop(325,984,93,49,x,y,62,33);
-for(const [x,y] of [[2380,830],[2535,835]])prop(8,940,45,93,x,y,28,58);
-prop(651,1080,112,70,2430,835,63,40);prop(766,1083,80,68,2490,842,48,41);
-// Whisper Grove: old forest shrine assembled from recovered town objects.
-prop(917,937,111,97,3018,292,62,54);prop(917,937,111,97,3120,292,62,54);
-prop(16,1071,122,79,3058,330,92,59);
-// Rust Hauler wreck: dense scrap composition made from authored salvage sprites.
-prop(16,1071,122,79,3125,1330,105,68);prop(917,937,111,97,3210,1340,72,63);
-prop(651,1080,112,70,3270,1360,68,42);prop(766,1083,80,68,3090,1390,58,49);
-// Ironroot arena markers create a recognizable boss destination without closing it in.
-for(const [x,y] of [[3420,700],[3650,710],[3420,930],[3650,925]])prop(235,942,87,90,x,y,42,44);
+// Forest scenery is authored in woods-layout.ts and rendered by woodsObjects.
