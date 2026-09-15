@@ -20,7 +20,6 @@ export function gameplayShortcut(key, state) {
   case 'j': return 'quests';
   case 'c': return 'craft';
   case 'p': return 'legacy';
-  case ' ': return 'attack';
   case 'e': return 'interact';
   case 'shift': return 'dodge';
   case 'b': return 'bandage';
