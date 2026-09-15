@@ -1,6 +1,7 @@
+import {WOODS_TRAILS,trailDistance,WOODS_SOLIDS} from './woods-layout.ts';
 // Stable IDs keep shared-world saves compatible across deployments.
 export const WOODS_START=2400;
-export const WOODS_EXIT={x:3690,y:820,name:'Junkyard Valley Gate'} as const;
+export const WOODS_EXIT={x:6030,y:820,name:'Junkyard Valley Gate'} as const;
 
 // Species keys are intentionally stable internal encounter IDs. Player-facing names
 // live in WOODS_PROFILES and can evolve without rewriting shared-world saves.
@@ -87,47 +88,50 @@ const WOODS_REWARDS:Record<WoodsSpecies,WoodsKillReward>={
 // Original IDs 20–26 remain untouched. New elite IDs are appended so old shared
 // saves migrate by seeding only the missing IDs.
 export const WOODS_SPAWNS=[
- {id:20,x:2780,y:540,kind:'slime',species:'sap-slime',hp:120,respawn:0},
- {id:21,x:2880,y:980,kind:'slime',species:'miremaw-ooze',hp:145,respawn:0},
- {id:22,x:3040,y:480,kind:'rat',species:'bramble-rat',hp:80,respawn:0},
- {id:23,x:3090,y:1160,kind:'rat',species:'ashfang-stalker',hp:95,respawn:0},
- {id:24,x:3310,y:530,kind:'bug',species:'rust-beetle',hp:180,respawn:0},
- {id:25,x:3370,y:1150,kind:'bug',species:'ironwing-beetle',hp:210,respawn:0},
- {id:26,x:3540,y:820,kind:'boss',species:'ironroot-guardian',hp:700,respawn:0},
+ {id:20,x:3650,y:510,kind:'slime',species:'sap-slime',hp:120,respawn:0},
+ {id:21,x:3760,y:1090,kind:'slime',species:'miremaw-ooze',hp:145,respawn:0},
+ {id:22,x:3970,y:430,kind:'rat',species:'bramble-rat',hp:80,respawn:0},
+ {id:23,x:4420,y:1200,kind:'rat',species:'ashfang-stalker',hp:95,respawn:0},
+ {id:24,x:4830,y:480,kind:'bug',species:'rust-beetle',hp:180,respawn:0},
+ {id:25,x:5190,y:1210,kind:'bug',species:'ironwing-beetle',hp:210,respawn:0},
+ {id:26,x:5600,y:820,kind:'boss',species:'ironroot-guardian',hp:700,respawn:0},
 ] as const;
 
 export const WOODS_ELITE_SPAWNS=[
- {id:27,x:3060,y:390,kind:'bug',species:'whisper-plaguewing',hp:360,respawn:0,elite:true},
- {id:28,x:3180,y:1430,kind:'bug',species:'hauler-sentinel',hp:480,respawn:0,elite:true},
+ {id:27,x:4200,y:350,kind:'bug',species:'whisper-plaguewing',hp:360,respawn:0,elite:true},
+ {id:28,x:4950,y:1360,kind:'bug',species:'hauler-sentinel',hp:480,respawn:0,elite:true},
 ] as const;
 
 export const WOODS_ALL_SPAWNS=[...WOODS_SPAWNS,...WOODS_ELITE_SPAWNS] as const;
 
 // Trees intentionally form groves instead of a solid wall. The east road and the
 // ranger camp stay open so Trash Town blends into the forest before density rises.
-const TREE_POSITIONS=[
- [2520,210],[2680,230],[2860,190],[3040,240],[3240,205],[3440,235],[3620,190],
- [2580,350],[2770,365],[2980,340],[3180,370],[3410,350],[3610,360],
- [2530,1390],[2710,1460],[2900,1395],[3100,1465],[3310,1400],[3500,1470],[3670,1390],
- [2600,1280],[2810,1310],[3010,1270],[3220,1320],[3440,1290],[3630,1270],
- [2690,610],[2850,670],[3180,610],[3460,650],[3660,590],
- [2670,1080],[2860,1130],[3250,1060],[3510,1050],[3670,1110],
- [2770,450],[2960,580],[3190,450],[3430,440],[3630,480],
- [2760,1210],[2970,1250],[3190,1210],[3450,1230],[3610,1200],
-] as const;
-export const WOODS_TREES=TREE_POSITIONS.map(([x,y],i)=>({x,y,variant:i%5,scale:.86+(i%4)*.08}));
+// Deterministic clustered foliage, with explicit clearance around trails and encounters.
+const TREE_POSITIONS:{x:number;y:number;variant:number;scale:number}[]=[];
+for(let i=0;i<1900;i++){
+ const hash=(n:number)=>{const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);};
+ const x=2700+hash(i+1)*3420,y=155+hash(i+2100)*1370;
+ const density=x<3300?.12:.68;
+ if(hash(i+4300)>density)continue;
+ if(WOODS_TRAILS.some(t=>trailDistance(x,y,t.points)<t.width/2+75))continue;
+ if(WOODS_ALL_SPAWNS.some(m=>Math.hypot(x-m.x,y-m.y)<(m.kind==='boss'?230:130)))continue;
+ if(WOODS_SOLIDS.some(p=>Math.abs(x-p.x)<p.w+65&&Math.abs(y-p.y)<100))continue;
+ if(TREE_POSITIONS.some(t=>Math.hypot(x-t.x,y-t.y)<75))continue;
+ TREE_POSITIONS.push({x:Math.round(x),y:Math.round(y),variant:i%5,scale:.9+hash(i+6000)*.5});
+}
+export const WOODS_TREES=TREE_POSITIONS;
 
 export const WOODS_LANDMARKS=[
  {id:'trail-camp',name:'Moss Trail Camp',x:2470,y:760,kind:'camp'},
- {id:'whisper-grove',name:'Whisper Grove',x:3060,y:330,kind:'grove'},
- {id:'rust-wreck',name:'Rust Hauler Wreck',x:3180,y:1370,kind:'wreck'},
- {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},
+ {id:'whisper-grove',name:'Whisper Grove',x:4200,y:280,kind:'grove'},
+ {id:'rust-wreck',name:'Rust Hauler Wreck',x:4950,y:1450,kind:'wreck'},
+ {id:'ironroot',name:'Ironroot Grove',x:5600,y:820,kind:'boss'},
  {id:'junkyard-gate',name:'Junkyard Valley Gate',x:WOODS_EXIT.x,y:WOODS_EXIT.y,kind:'gate'},
 ] as const;
 
 export const WOODS_EVENTS:readonly WoodsLandmarkEvent[]=[
- {id:'whisper-purge',name:'Whisper Grove Purge',x:3060,y:330,eliteId:27,claimKey:'woods-event:whisper-purge',reward:{scrap:40,circuits:2,xp:45},description:'Defeat Whisper Plaguewing, then cleanse the infected grove cache.'},
- {id:'hauler-recovery',name:'Rust Hauler Recovery',x:3180,y:1370,eliteId:28,claimKey:'woods-event:hauler-recovery',reward:{scrap:55,circuits:3,xp:60},description:'Destroy the Hauler Sentinel, then recover the sealed cargo.'},
+ {id:'whisper-purge',name:'Whisper Grove Purge',x:4200,y:280,eliteId:27,claimKey:'woods-event:whisper-purge',reward:{scrap:40,circuits:2,xp:45},description:'Defeat Whisper Plaguewing, then cleanse the infected grove cache.'},
+ {id:'hauler-recovery',name:'Rust Hauler Recovery',x:4950,y:1450,eliteId:28,claimKey:'woods-event:hauler-recovery',reward:{scrap:55,circuits:3,xp:60},description:'Destroy the Hauler Sentinel, then recover the sealed cargo.'},
 ] as const;
 
 export const WOODS_ENCOUNTER_DETAILS=WOODS_SPAWNS.map((spawn,index)=>({
@@ -157,8 +161,14 @@ export function woodsMonsterScale(id:number){return woodsMonsterProfile(id)?.sca
 export function woodsKillReward(id:number):WoodsKillReward|undefined{const m=WOODS_ALL_SPAWNS.find(m=>m.id===id);return m?WOODS_REWARDS[m.species]:undefined;}
 export function woodsRespawnDelay(id:number){return isWoodsElite(id)?300000:id===26?120000:25000;}
 export function woodsEvent(id:string){return WOODS_EVENTS.find(event=>event.id===id);}
-// Only add missing IDs; never restore a defeated enemy or overwrite its cooldown.
-export function seedWoods<T extends {id:number}>(monsters:T[]):(T|typeof WOODS_ALL_SPAWNS[number])[]{
+// Relocate old forest residents once, preserving health, rewards and respawn deadlines.
+// The version travels with each shared monster, not per connected player.
+export function seedWoods<T extends {id:number;woodsLayout?:number}>(monsters:T[]):(T|typeof WOODS_ALL_SPAWNS[number])[]{
  const ids=new Set(monsters.map(m=>m.id));
- return [...monsters,...WOODS_ALL_SPAWNS.filter(m=>!ids.has(m.id)).map(m=>({...m}))];
+ const migrated=monsters.map(m=>{
+  const home=WOODS_ALL_SPAWNS.find(s=>s.id===m.id);
+  if(!home||m.woodsLayout===2)return m;
+  return {...m,x:home.x,y:home.y,woodsLayout:2,navPath:[],navAt:0,navGoal:undefined,windup:undefined,mode:'patrol' as const};
+ });
+ return [...migrated,...WOODS_ALL_SPAWNS.filter(m=>!ids.has(m.id)).map(m=>({...m,woodsLayout:2}))];
 }

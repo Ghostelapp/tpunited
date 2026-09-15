@@ -265,3 +265,32 @@ test('walk cycle contains a neutral passing pose and does not alternate only two
  const id=WOODS_SPAWNS[0].id,entry=WOODS_MONSTER_ATLAS[woodsMonsterProfile(id).atlasMonster];
  assert.deepEqual(woodsMonsterPoseFrame(id,'move',0),entry.idle);assert.deepEqual(woodsMonsterPoseFrame(id,'move',20),entry.move[0]);assert.deepEqual(woodsMonsterPoseFrame(id,'move',40),entry.move[1]);
 });
+
+test('expanded woodland routes and encounter approaches stay walkable',async()=>{
+ const {WOODS_TRAILS,WOODS_WORLD_WIDTH}=await import('../packages/game-core/woods-layout.ts');
+ const {WORLD,CACHES}=await import('../packages/game-core/world.ts');
+ assert.equal(WORLD.width,6200);assert.equal(WORLD.width,WOODS_WORLD_WIDTH);
+ assert.ok(WOODS_EXIT.x>5900);
+ for(const trail of WOODS_TRAILS)for(let i=1;i<trail.points.length;i++){
+  const [ax,ay]=trail.points[i-1],[bx,by]=trail.points[i];
+  assert.equal(clearMonsterPath({x:ax,y:ay},{x:bx,y:by}),true,`trail ${ax},${ay} to ${bx},${by}`);
+ }
+ for(const p of [...WOODS_EVENTS,...WOODS_ALL_SPAWNS,...CACHES])assert.equal(blocked(p.x,p.y),false,`interaction ${p.id} blocked`);
+});
+
+test('forest layout migration moves existing enemies once without resurrecting or healing',()=>{
+ const old=[{id:26,x:3540,y:820,hp:0,respawn:900000,windup:{at:123,x:3500,y:800},navPath:[{x:3500,y:800}]},{id:20,x:2780,y:540,hp:31,respawn:0}];
+ const migrated=seedWoods(old),boss=migrated.find(m=>m.id===26),eel=migrated.find(m=>m.id===20);
+ assert.deepEqual({x:boss.x,y:boss.y},monsterHome(26));assert.equal(boss.hp,0);assert.equal(boss.respawn,900000);assert.equal(boss.windup,undefined);assert.deepEqual(boss.navPath,[]);
+ assert.equal(eel.hp,31);eel.x+=30;
+ assert.equal(seedWoods(migrated).find(m=>m.id===20).x,eel.x);
+ assert.equal(old[0].x,3540);
+});
+
+test('returning players escape newly placed props without losing progress',async()=>{
+ const {migrateTown}=await import('../packages/game-core/world.ts');
+ const s=initialState();s.x=2500;s.y=640;s.scrap=555;s.woodsQuest='complete';
+ assert.equal(blocked(s.x,s.y),true);
+ const next=migrateTown(s);assert.equal(blocked(next.x,next.y),false);assert.equal(next.scrap,555);assert.equal(next.woodsQuest,'complete');
+ assert.deepEqual(migrateTown(next),next);
+});
