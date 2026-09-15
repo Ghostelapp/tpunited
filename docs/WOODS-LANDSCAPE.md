@@ -31,3 +31,13 @@ In PowerShell, from the project directory:
 ```
 
 Deploy both realtime and frontend workers: they must agree on world bounds and collisions. The script stops on any failed step. No database reset is required. This document does not indicate that a live deployment has occurred.
+
+## Screenshot-driven boundary correction
+
+Exterior camera bounds now keep the full viewport over terrain; very tall/wide viewports use a fitting minimum zoom. Pointer aim uses that same zoom. The east town fence blocks movement outside its gate. Players saved on the newly solid wall are moved to nearby free ground once (player woodsLayout 3); monster migration is unchanged.
+
+The terrain no longer paints a perimeter road below the forest. Woodland ground fills the terrain to its edges, bordered by decorative foliage. The approach has no rounded road cap, trail outlines are removed, runoff has broken muddy banks, and encounter ground is blended rather than filled with one polygon. The future pass is explicitly marked closed.
+
+The preview script now renders actual town terrain, buildings, NPCs and shared decor in addition to the forest, including a fourth south-wall view. This catches city/forest joins that forest-only previews missed. Camera bounds and wall collision have regression tests; previews remain Canvas renders, not browser screenshots.
+
+![Southern city boundary](previews/woods-south-wall.webp)

@@ -28,8 +28,16 @@ export function drawSpeech(ctx:CanvasRenderingContext2D,store:SpeechStore,name:s
  ctx.beginPath();ctx.moveTo(x-5,top+height);ctx.lineTo(x,top+height+6);ctx.lineTo(x+5,top+height);ctx.fill();
  ctx.fillStyle='#f0f5df';lines.forEach((line,i)=>ctx.fillText(line,x,top+8+i*17));ctx.restore();
 }
-// World bounds constrain movement, not the camera. Keep the avatar away from edge HUDs.
+// Smooth tracking is bounded by clampOutdoorCamera for exterior scenes.
 export function followPlayer(camera:{x:number;y:number},player:{x:number;y:number},dt:number){
  const decay=Math.exp(-Math.max(0,dt)*10);
  return {x:player.x+Math.max(-24,Math.min(24,(camera.x-player.x)*decay)),y:player.y+Math.max(-24,Math.min(24,(camera.y-player.y)*decay))};
+}
+
+export function outdoorZoom(width:number,height:number,world:{width:number;height:number}){
+ return Math.max(width<600?.65:width<850?.8:1,width/world.width,height/world.height);
+}
+export function clampOutdoorCamera(camera:{x:number;y:number},width:number,height:number,zoom:number,world:{width:number;height:number}){
+ const halfW=Math.min(world.width/2,width/(2*zoom)),halfH=Math.min(world.height/2,height/(2*zoom));
+ return {x:Math.max(halfW,Math.min(world.width-halfW,camera.x)),y:Math.max(halfH,Math.min(world.height-halfH,camera.y))};
 }
