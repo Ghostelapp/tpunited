@@ -16,17 +16,19 @@ export type WoodsSkillSpec={
  telegraph:WoodsTelegraph;
  attackVariant:0|1;
  color:string;
+ moveSpeed:number;
+ stopDistance:number;
  dashMs?:number;
  dashScale?:number;
 };
 
 const WOODS_SKILLS:Record<number,WoodsSkillSpec>={
- 20:{skill:'eel-shock',label:'SAP SHOCK',range:220,radius:70,windup:800,cooldown:2300,damage:13,origin:'target',telegraph:'circle',attackVariant:1,color:'#63c9b8'},
- 21:{skill:'hound-charge',label:'MIRE CHARGE',range:190,radius:62,windup:700,cooldown:2500,damage:17,origin:'impact',telegraph:'line',attackVariant:0,color:'#d06a58',dashMs:520,dashScale:.34},
- 22:{skill:'bat-dive',label:'BRAMBLE DIVE',range:235,radius:52,windup:600,cooldown:2100,damage:14,origin:'impact',telegraph:'line',attackVariant:0,color:'#d55ac7',dashMs:480,dashScale:.38},
- 23:{skill:'roach-spit',label:'ASH SPIT',range:260,radius:58,windup:900,cooldown:2700,damage:15,origin:'target',telegraph:'circle',attackVariant:0,color:'#9ccf46'},
- 24:{skill:'wasp-burst',label:'RUST BURST',range:300,radius:45,windup:750,cooldown:2400,damage:18,origin:'target',telegraph:'line',attackVariant:0,color:'#d68b3b'},
- 25:{skill:'serpent-storm',label:'CABLE STORM',range:155,radius:125,windup:1000,cooldown:3200,damage:22,origin:'self',telegraph:'ring',attackVariant:0,color:'#b85fc8'},
+ 20:{skill:'eel-shock',label:'SAP SHOCK',range:220,radius:70,windup:800,cooldown:2300,damage:13,origin:'target',telegraph:'circle',attackVariant:1,color:'#63c9b8',moveSpeed:60,stopDistance:88},
+ 21:{skill:'hound-charge',label:'MIRE CHARGE',range:190,radius:62,windup:700,cooldown:2500,damage:17,origin:'impact',telegraph:'line',attackVariant:0,color:'#d06a58',moveSpeed:72,stopDistance:46,dashMs:520,dashScale:.34},
+ 22:{skill:'bat-dive',label:'BRAMBLE DIVE',range:235,radius:52,windup:600,cooldown:2100,damage:14,origin:'impact',telegraph:'line',attackVariant:0,color:'#d55ac7',moveSpeed:108,stopDistance:52,dashMs:480,dashScale:.38},
+ 23:{skill:'roach-spit',label:'ASH SPIT',range:260,radius:58,windup:900,cooldown:2700,damage:15,origin:'target',telegraph:'circle',attackVariant:0,color:'#9ccf46',moveSpeed:64,stopDistance:128},
+ 24:{skill:'wasp-burst',label:'RUST BURST',range:300,radius:45,windup:750,cooldown:2400,damage:18,origin:'target',telegraph:'line',attackVariant:0,color:'#d68b3b',moveSpeed:74,stopDistance:152},
+ 25:{skill:'serpent-storm',label:'CABLE STORM',range:155,radius:125,windup:1000,cooldown:3200,damage:22,origin:'self',telegraph:'ring',attackVariant:0,color:'#b85fc8',moveSpeed:58,stopDistance:78},
 };
 
 export type WoodsBossPhase={
