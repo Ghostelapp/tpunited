@@ -1,0 +1,72 @@
+name: Apply Rusty Woods combat client
+on:
+  push:
+    branches: [feat/rusty-woods-combat-pass]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/rusty-woods-combat-pass
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Patch forest combat presentation
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const file='components/tpu/game.tsx';
+          let source=fs.readFileSync(file,'utf8');
+          const once=(from,to,label)=>{const n=source.split(from).length-1;if(n!==1)throw new Error(`${label}: expected 1 anchor, found ${n}`);source=source.replace(from,to);};
+          once(
+            "import {drawWoodsMonster,WOODS_MONSTER_SHEET} from './woods-monsters';",
+            "import {drawWoodsMonster,WOODS_MONSTER_SHEET,type WoodsMonsterPose} from './woods-monsters';\nimport {woodsAttackVariant,woodsBossPhase,woodsSkillSpec} from '../../packages/game-core/woods-combat.ts';",
+            'combat presentation import'
+          );
+          once(
+            "const monsterVisuals=new Map<number,{x:number;y:number;face:number;distance:number;respawn:number;fromX:number;fromY:number;toX:number;toY:number;at:number;duration:number}>();const resize=",
+            "const monsterVisuals=new Map<number,{x:number;y:number;face:number;distance:number;respawn:number;fromX:number;fromY:number;toX:number;toY:number;at:number;duration:number}>();const deathVisuals=new Map<number,{x:number;y:number;face:number;at:number}>();const resize=",
+            'death visual store'
+          );
+          once(
+            "for(const m of activeMonsters(state)){if(m.hp<=0){monsterVisuals.delete(m.id);continue;}",
+            "for(const m of activeMonsters(state)){if(m.hp<=0){const dead=monsterVisuals.get(m.id);if(isWoodsMonster(m.id)&&dead&&!deathVisuals.has(m.id))deathVisuals.set(m.id,{x:dead.x,y:dead.y,face:dead.face,at:now});monsterVisuals.delete(m.id);continue;}deathVisuals.delete(m.id);",
+            'death transition'
+          );
+          once(
+            "if(m.kind==='boss'&&m.slamAt){ctx.fillStyle='#fa594b33';ctx.strokeStyle='#ff7055';ctx.lineWidth=3;ctx.beginPath();ctx.arc(m.x,m.y,145,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ffd2bd';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.fillText('GROUND SLAM — MOVE!',m.x,m.y-155);ctx.textAlign='left';}",
+            "if(m.kind==='boss'&&m.slamAt){const phase=isWoodsMonster(m.id)?woodsBossPhase(m.hp):undefined,radius=phase?.slamRadius??145;ctx.fillStyle='#fa594b33';ctx.strokeStyle=phase?.phase===3?'#ff9b4f':'#ff7055';ctx.lineWidth=3+(phase?.phase??1);ctx.beginPath();ctx.arc(m.x,m.y,radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ffd2bd';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.fillText(phase?`PHASE ${phase.phase} · GROUND SLAM — MOVE!`:'GROUND SLAM — MOVE!',m.x,m.y-radius-10);ctx.textAlign='left';}",
+            'boss slam presentation'
+          );
+          once(
+            "if(isWoodsMonster(m.id)){drawWoodsMonster(ctx,images.current[WOODS_MONSTER_SHEET],m.id,walking,visual.distance,now,flash);}",
+            "if(isWoodsMonster(m.id)){const pose:WoodsMonsterPose=flash?'hurt':(m.windup||m.slamAt)?'attack':walking?'move':'idle';drawWoodsMonster(ctx,images.current[WOODS_MONSTER_SHEET],m.id,walking,visual.distance,now,flash,pose,woodsAttackVariant(m.id,m.windup?.skill));}",
+            'monster pose renderer'
+          );
+          once(
+            "ctx.restore();if(isWoodsMonster(m.id)){ctx.fillStyle='#d7c787';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(woodsMonsterName(m.id),visual.x,visual.y-(m.kind==='boss'?132:72));ctx.textAlign='left';}ctx.fillStyle='#132b1c';",
+            "ctx.restore();if(isWoodsMonster(m.id)){ctx.fillStyle='#d7c787';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(woodsMonsterName(m.id),visual.x,visual.y-(m.kind==='boss'?132:72));if(m.id===26){const phase=woodsBossPhase(m.hp);ctx.fillStyle=phase.phase===3?'#ffb75f':'#b9ce83';ctx.font='bold 10px monospace';ctx.fillText(`PHASE ${phase.phase} · ${phase.label}`,visual.x,visual.y-116);}ctx.textAlign='left';}ctx.fillStyle='#132b1c';",
+            'boss phase label'
+          );
+          once(
+            " }});}\n for(const other of players.current){",
+            " }});}\n for(const [id,dead] of deathVisuals){const age=now-dead.at;if(age>720){deathVisuals.delete(id);continue;}objects.push({y:dead.y,draw:()=>{ctx.save();ctx.globalAlpha=Math.max(0,1-age/720);ctx.translate(dead.x,dead.y);ctx.scale(dead.face*(1-age/1800),1);drawWoodsMonster(ctx,images.current[WOODS_MONSTER_SHEET],id,false,0,now,false,'death',0);ctx.restore();}});}\n for(const other of players.current){",
+            'death pose objects'
+          );
+          const oldTelegraph=" for(const enemy of activeMonsters(state)){if(!enemy.windup||enemy.hp<=0)continue;const center=enemy.kind==='slime'?enemy.windup:enemy;ctx.save();ctx.strokeStyle='#ffac62';ctx.fillStyle='#ff633429';ctx.lineWidth=3;ctx.beginPath();ctx.arc(center.x,center.y,enemy.kind==='bug'?95:enemy.kind==='slime'?65:35,0,Math.PI*2);ctx.fill();ctx.stroke();if(enemy.kind==='rat'){ctx.beginPath();ctx.moveTo(enemy.x,enemy.y);ctx.lineTo(enemy.windup.x,enemy.windup.y);ctx.stroke();}ctx.restore();}";
+          const newTelegraph=` for(const enemy of activeMonsters(state)){if(!enemy.windup||enemy.hp<=0)continue;if(isWoodsMonster(enemy.id)){const root=enemy.id===26&&enemy.windup.skill==='root-burst',spec=root?undefined:woodsSkillSpec(enemy.id),phase=root?woodsBossPhase(enemy.hp):undefined,radius=root?(phase?.rootRadius??80):(spec?.radius??60),telegraph=root?'circle':(spec?.telegraph??'circle'),color=root?'#c8a84f':(spec?.color??'#ffac62'),label=root?'ROOT BURST':(spec?.label??'FOREST ATTACK'),center=telegraph==='ring'?enemy:enemy.windup;ctx.save();ctx.globalAlpha=.72+.18*Math.sin(now/85+enemy.id);ctx.strokeStyle=color;ctx.fillStyle=color+'29';ctx.lineWidth=3;if(telegraph==='line'){ctx.beginPath();ctx.moveTo(enemy.x,enemy.y);ctx.lineTo(enemy.windup.x,enemy.windup.y);ctx.stroke();ctx.beginPath();ctx.arc(enemy.windup.x,enemy.windup.y,radius,0,Math.PI*2);ctx.fill();ctx.stroke();}else{ctx.beginPath();ctx.arc(center.x,center.y,radius,0,Math.PI*2);ctx.fill();ctx.stroke();if(telegraph==='ring'){ctx.beginPath();ctx.arc(center.x,center.y,Math.max(18,radius-18),0,Math.PI*2);ctx.stroke();}}ctx.globalAlpha=1;ctx.fillStyle='#f4e5bd';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(label,center.x,center.y-radius-9);ctx.textAlign='left';ctx.restore();continue;}const center=enemy.kind==='slime'?enemy.windup:enemy;ctx.save();ctx.strokeStyle='#ffac62';ctx.fillStyle='#ff633429';ctx.lineWidth=3;ctx.beginPath();ctx.arc(center.x,center.y,enemy.kind==='bug'?95:enemy.kind==='slime'?65:35,0,Math.PI*2);ctx.fill();ctx.stroke();if(enemy.kind==='rat'){ctx.beginPath();ctx.moveTo(enemy.x,enemy.y);ctx.lineTo(enemy.windup.x,enemy.windup.y);ctx.stroke();}ctx.restore();}`;
+          once(oldTelegraph,newTelegraph,'forest telegraphs');
+          fs.writeFileSync(file,source);
+          NODE
+      - name: Commit client combat patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add components/tpu/game.tsx
+          git diff --cached --check
+          git commit -m "Render Rusty Woods combat telegraphs and poses [skip ci]"
+          git push origin HEAD:feat/rusty-woods-combat-pass
