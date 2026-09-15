@@ -3,12 +3,13 @@ export const WOODS_START=2400;
 
 // Species keys are intentionally stable internal encounter IDs. Player-facing names
 // live in WOODS_PROFILES and can evolve without rewriting shared-world saves.
-export type WoodsSpecies='sap-slime'|'miremaw-ooze'|'bramble-rat'|'ashfang-stalker'|'rust-beetle'|'ironwing-beetle'|'ironroot-guardian';
-export type WoodsEncounterMarker='sap'|'mire'|'bramble'|'ash'|'rust'|'iron'|'root';
+export type WoodsSpecies='sap-slime'|'miremaw-ooze'|'bramble-rat'|'ashfang-stalker'|'rust-beetle'|'ironwing-beetle'|'ironroot-guardian'|'whisper-plaguewing'|'hauler-sentinel';
+export type WoodsEncounterMarker='sap'|'mire'|'bramble'|'ash'|'rust'|'iron'|'root'|'plague'|'sentinel';
+export type WoodsAtlasMonster='sewer-eel'|'junk-hound'|'neon-bat'|'toxic-roach'|'drone-wasp'|'cable-serpent'|'scrap-golem'|'plague-pigeon'|'riot-bot';
 export type WoodsMonsterProfile={
  name:string;
- atlasMonster:'sewer-eel'|'junk-hound'|'neon-bat'|'toxic-roach'|'drone-wasp'|'cable-serpent'|'scrap-golem';
- role:'skirmisher'|'bruiser'|'ambusher'|'charger'|'tank'|'boss';
+ atlasMonster:WoodsAtlasMonster;
+ role:'skirmisher'|'bruiser'|'ambusher'|'charger'|'tank'|'boss'|'elite';
  marker:WoodsEncounterMarker;
  accent:string;
  shadow:string;
@@ -19,6 +20,8 @@ export type WoodsMonsterProfile={
  lootHint:string;
 };
 export type WoodsKillReward={scrap:number;circuits:number;xp:number;label:string};
+export type WoodsEventReward={scrap:number;circuits:number;xp:number};
+export type WoodsLandmarkEvent={id:'whisper-purge'|'hauler-recovery';name:string;x:number;y:number;eliteId:27|28;claimKey:string;reward:WoodsEventReward;description:string};
 
 export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
  'sap-slime':{
@@ -56,6 +59,16 @@ export const WOODS_PROFILES:Record<WoodsSpecies,WoodsMonsterProfile>={
   filter:'sepia(.08) saturate(1.05) contrast(1.04)',scale:1.16,
   habitat:'Ironroot Grove',behavior:'Three-phase boss: faster ground slams and targeted root eruptions unlock as health falls.',lootHint:'Guaranteed boss-grade equipment roll',
  },
+ 'whisper-plaguewing':{
+  name:'WHISPER PLAGUEWING',atlasMonster:'plague-pigeon',role:'elite',marker:'plague',accent:'#8bd64b',shadow:'#26331e',
+  filter:'saturate(1.12) contrast(1.05)',scale:1.08,
+  habitat:'Whisper Grove',behavior:'Elite flier that circles at range and drops a toxic plague burst on the player.',lootHint:'Guaranteed rare armor plus infected salvage',
+ },
+ 'hauler-sentinel':{
+  name:'HAULER SENTINEL',atlasMonster:'riot-bot',role:'elite',marker:'sentinel',accent:'#59cce8',shadow:'#20333b',
+  filter:'saturate(1.06) contrast(1.08)',scale:1.12,
+  habitat:'Rust Hauler Wreck',behavior:'Armored elite that suppresses from range before committing to a powered charge.',lootHint:'Guaranteed rare weapon plus military salvage',
+ },
 };
 
 const WOODS_REWARDS:Record<WoodsSpecies,WoodsKillReward>={
@@ -66,8 +79,12 @@ const WOODS_REWARDS:Record<WoodsSpecies,WoodsKillReward>={
  'rust-beetle':{scrap:4,circuits:1,xp:5,label:'Drone parts'},
  'ironwing-beetle':{scrap:4,circuits:2,xp:6,label:'Live cable'},
  'ironroot-guardian':{scrap:30,circuits:2,xp:25,label:'Ironroot core'},
+ 'whisper-plaguewing':{scrap:18,circuits:2,xp:18,label:'Plaguewing cache'},
+ 'hauler-sentinel':{scrap:24,circuits:3,xp:24,label:'Sentinel cache'},
 };
 
+// Original IDs 20–26 remain untouched. New elite IDs are appended so old shared
+// saves migrate by seeding only the missing IDs.
 export const WOODS_SPAWNS=[
  {id:20,x:2780,y:540,kind:'slime',species:'sap-slime',hp:120,respawn:0},
  {id:21,x:2880,y:980,kind:'slime',species:'miremaw-ooze',hp:145,respawn:0},
@@ -77,6 +94,13 @@ export const WOODS_SPAWNS=[
  {id:25,x:3370,y:1150,kind:'bug',species:'ironwing-beetle',hp:210,respawn:0},
  {id:26,x:3540,y:820,kind:'boss',species:'ironroot-guardian',hp:700,respawn:0},
 ] as const;
+
+export const WOODS_ELITE_SPAWNS=[
+ {id:27,x:3060,y:390,kind:'bug',species:'whisper-plaguewing',hp:360,respawn:0,elite:true},
+ {id:28,x:3180,y:1430,kind:'bug',species:'hauler-sentinel',hp:480,respawn:0,elite:true},
+] as const;
+
+export const WOODS_ALL_SPAWNS=[...WOODS_SPAWNS,...WOODS_ELITE_SPAWNS] as const;
 
 // Trees intentionally form groves instead of a solid wall. The east road and the
 // ranger camp stay open so Trash Town blends into the forest before density rises.
@@ -99,6 +123,11 @@ export const WOODS_LANDMARKS=[
  {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},
 ] as const;
 
+export const WOODS_EVENTS:readonly WoodsLandmarkEvent[]=[
+ {id:'whisper-purge',name:'Whisper Grove Purge',x:3060,y:330,eliteId:27,claimKey:'woods-event:whisper-purge',reward:{scrap:40,circuits:2,xp:45},description:'Defeat Whisper Plaguewing, then cleanse the infected grove cache.'},
+ {id:'hauler-recovery',name:'Rust Hauler Recovery',x:3180,y:1370,eliteId:28,claimKey:'woods-event:hauler-recovery',reward:{scrap:55,circuits:3,xp:60},description:'Destroy the Hauler Sentinel, then recover the sealed cargo.'},
+] as const;
+
 export const WOODS_ENCOUNTER_DETAILS=WOODS_SPAWNS.map((spawn,index)=>({
  id:`encounter-${spawn.id}`,
  monsterId:spawn.id,
@@ -111,15 +140,23 @@ export const WOODS_ENCOUNTER_DETAILS=WOODS_SPAWNS.map((spawn,index)=>({
  id:string;monsterId:number;x:number;y:number;radius:number;marker:WoodsEncounterMarker;accent:string;
 }[];
 
-export function isWoodsMonster(id:number){return WOODS_SPAWNS.some(m=>m.id===id);}
-export function woodsMonsterHealth(id:number){return WOODS_SPAWNS.find(m=>m.id===id)?.hp??120;}
-export function woodsMonsterProfile(id:number):WoodsMonsterProfile|undefined{const m=WOODS_SPAWNS.find(m=>m.id===id);return m?WOODS_PROFILES[m.species]:undefined;}
+export const WOODS_ELITE_ENCOUNTERS=WOODS_ELITE_SPAWNS.map((spawn,index)=>({
+ id:`elite-${spawn.id}`,monsterId:spawn.id,x:spawn.x,y:spawn.y,radius:86+index*10,
+ marker:WOODS_PROFILES[spawn.species].marker,accent:WOODS_PROFILES[spawn.species].accent,
+})) as readonly {id:string;monsterId:number;x:number;y:number;radius:number;marker:WoodsEncounterMarker;accent:string}[];
+
+export function isWoodsMonster(id:number){return WOODS_ALL_SPAWNS.some(m=>m.id===id);}
+export function isWoodsElite(id:number){return WOODS_ELITE_SPAWNS.some(m=>m.id===id);}
+export function woodsMonsterHealth(id:number){return WOODS_ALL_SPAWNS.find(m=>m.id===id)?.hp??120;}
+export function woodsMonsterProfile(id:number):WoodsMonsterProfile|undefined{const m=WOODS_ALL_SPAWNS.find(m=>m.id===id);return m?WOODS_PROFILES[m.species]:undefined;}
 export function woodsMonsterName(id:number){return woodsMonsterProfile(id)?.name??'FOREST CREATURE';}
 export function woodsMonsterFilter(id:number){return woodsMonsterProfile(id)?.filter??'none';}
 export function woodsMonsterScale(id:number){return woodsMonsterProfile(id)?.scale??1;}
-export function woodsKillReward(id:number):WoodsKillReward|undefined{const m=WOODS_SPAWNS.find(m=>m.id===id);return m?WOODS_REWARDS[m.species]:undefined;}
+export function woodsKillReward(id:number):WoodsKillReward|undefined{const m=WOODS_ALL_SPAWNS.find(m=>m.id===id);return m?WOODS_REWARDS[m.species]:undefined;}
+export function woodsRespawnDelay(id:number){return isWoodsElite(id)?300000:id===26?120000:25000;}
+export function woodsEvent(id:string){return WOODS_EVENTS.find(event=>event.id===id);}
 // Only add missing IDs; never restore a defeated enemy or overwrite its cooldown.
-export function seedWoods<T extends {id:number}>(monsters:T[]):(T|typeof WOODS_SPAWNS[number])[]{
+export function seedWoods<T extends {id:number}>(monsters:T[]):(T|typeof WOODS_ALL_SPAWNS[number])[]{
  const ids=new Set(monsters.map(m=>m.id));
- return [...monsters,...WOODS_SPAWNS.filter(m=>!ids.has(m.id)).map(m=>({...m}))];
+ return [...monsters,...WOODS_ALL_SPAWNS.filter(m=>!ids.has(m.id)).map(m=>({...m}))];
 }

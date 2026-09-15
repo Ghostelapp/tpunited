@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
-import {WOODS_ENCOUNTER_DETAILS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile} from '../packages/game-core/woods.ts';
+import {WOODS_ALL_SPAWNS,WOODS_ELITE_SPAWNS,WOODS_ENCOUNTER_DETAILS,WOODS_EVENTS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,isWoodsElite,seedWoods,woodsEvent,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile,woodsRespawnDelay} from '../packages/game-core/woods.ts';
 import {woodsAttackVariant,woodsBossPhase,woodsSkillSpec} from '../packages/game-core/woods-combat.ts';
 import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame,woodsMonsterPoseFrame} from '../components/tpu/woods-monsters.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
@@ -11,7 +11,7 @@ test('forest joins the eastern road and tree trunks block movement',()=>{
  assert.ok(p.x>2400);
  assert.ok(WOODS_TREES.length>=40);
  for(const tree of WOODS_TREES)assert.equal(blocked(tree.x,tree.y),true);
- for(const m of WOODS_SPAWNS){assert.equal(blocked(m.x,m.y),false);assert.deepEqual(monsterHome(m.id),{x:m.x,y:m.y});}
+ for(const m of WOODS_ALL_SPAWNS){assert.equal(blocked(m.x,m.y),false);assert.deepEqual(monsterHome(m.id),{x:m.x,y:m.y});}
  assert.equal(clearMonsterPath({x:2330,y:760},{x:2700,y:760}),true);
 });
 
@@ -24,8 +24,8 @@ test('forest transition keeps a broad playable corridor from town to the first c
  assert.equal(clearMonsterPath({x:2380,y:760},{x:2700,y:780}),true);
 });
 
-test('forest groves leave spawn points and ranger camp usable',()=>{
- const safePoints=[[2470,760],[2780,540],[2880,980],[3040,480],[3090,1160],[3310,530],[3370,1150],[3540,820]];
+test('forest groves leave spawn points, elite arenas and ranger camp usable',()=>{
+ const safePoints=[[2470,760],...WOODS_ALL_SPAWNS.map(m=>[m.x,m.y])];
  for(const [x,y] of safePoints)assert.equal(blocked(x,y),false,`important forest point blocked at ${x},${y}`);
 });
 
@@ -38,18 +38,29 @@ test('forest roster has distinct encounter identities and navigation landmarks',
  assert.ok(WOODS_SPAWNS[5].hp>WOODS_SPAWNS[4].hp);
 });
 
-test('every forest encounter uses a different real monster atlas family',()=>{
+test('normal forest encounters keep their seven authored monster families',()=>{
  const profiles=WOODS_SPAWNS.map(m=>woodsMonsterProfile(m.id));
  assert.ok(profiles.every(Boolean));
  assert.equal(new Set(profiles.map(p=>p.atlasMonster)).size,7);
  assert.deepEqual(profiles.map(p=>p.name),['SAP EEL','MIRE HOUND','BRAMBLE BAT','ASH ROACH','RUST WASP','CABLE SERPENT','IRONROOT GOLEM']);
- assert.equal(Object.keys(WOODS_PROFILES).length,7);
+ assert.equal(Object.keys(WOODS_PROFILES).length,9);
  assert.equal(WOODS_ENCOUNTER_DETAILS.length,7);
  assert.equal(new Set(WOODS_ENCOUNTER_DETAILS.map(e=>e.marker)).size,7);
 });
 
-test('forest atlas idle movement attack hurt and death crops stay inside sheet 9',()=>{
- for(const spawn of WOODS_SPAWNS){
+test('Whisper Grove and Rust Hauler add two real authored elite encounters',()=>{
+ assert.deepEqual(WOODS_ELITE_SPAWNS.map(m=>m.id),[27,28]);
+ assert.deepEqual(WOODS_ELITE_SPAWNS.map(m=>woodsMonsterName(m.id)),['WHISPER PLAGUEWING','HAULER SENTINEL']);
+ assert.deepEqual(WOODS_ELITE_SPAWNS.map(m=>woodsMonsterProfile(m.id).atlasMonster),['plague-pigeon','riot-bot']);
+ assert.equal(isWoodsElite(27),true);assert.equal(isWoodsElite(28),true);assert.equal(isWoodsElite(26),false);
+ assert.equal(woodsRespawnDelay(27),300000);assert.equal(woodsRespawnDelay(28),300000);
+ assert.deepEqual(WOODS_EVENTS.map(e=>e.id),['whisper-purge','hauler-recovery']);
+ assert.equal(woodsEvent('whisper-purge')?.eliteId,27);
+ assert.equal(woodsEvent('hauler-recovery')?.eliteId,28);
+});
+
+test('all forest atlas poses stay inside sheet 9',()=>{
+ for(const spawn of WOODS_ALL_SPAWNS){
   const profile=woodsMonsterProfile(spawn.id),entry=WOODS_MONSTER_ATLAS[profile.atlasMonster];
   const frames=[entry.idle,...entry.move,...entry.attack,entry.hurt,entry.death,
    woodsMonsterAtlasFrame(spawn.id,false,0),woodsMonsterAtlasFrame(spawn.id,true,0),
@@ -63,12 +74,14 @@ test('forest atlas idle movement attack hurt and death crops stay inside sheet 9
 });
 
 test('forest species expose tuned salvage bonuses',()=>{
- const rewards=WOODS_SPAWNS.map(m=>woodsKillReward(m.id));
+ const rewards=WOODS_ALL_SPAWNS.map(m=>woodsKillReward(m.id));
  assert.ok(rewards.every(Boolean));
- assert.equal(new Set(rewards.map(r=>r.label)).size,7);
+ assert.equal(new Set(rewards.map(r=>r.label)).size,9);
  assert.deepEqual(woodsKillReward(20),{scrap:4,circuits:0,xp:3,label:'Sap resin'});
  assert.deepEqual(woodsKillReward(25),{scrap:4,circuits:2,xp:6,label:'Live cable'});
  assert.deepEqual(woodsKillReward(26),{scrap:30,circuits:2,xp:25,label:'Ironroot core'});
+ assert.deepEqual(woodsKillReward(27),{scrap:18,circuits:2,xp:18,label:'Plaguewing cache'});
+ assert.deepEqual(woodsKillReward(28),{scrap:24,circuits:3,xp:24,label:'Sentinel cache'});
  assert.equal(woodsKillReward(999),undefined);
 });
 
@@ -82,6 +95,13 @@ test('normal forest monsters have distinct server-authoritative skills and engag
  assert.equal(woodsSkillSpec(25).telegraph,'ring');
  assert.equal(woodsAttackVariant(20,'eel-shock'),1);
  assert.equal(woodsAttackVariant(26,'root-burst'),1);
+});
+
+test('elite encounters have distinct high-value combat skills',()=>{
+ const plague=woodsSkillSpec(27),sentinel=woodsSkillSpec(28);
+ assert.equal(plague.skill,'plague-drop');assert.equal(plague.telegraph,'circle');assert.equal(plague.stopDistance,165);
+ assert.equal(sentinel.skill,'sentinel-charge');assert.equal(sentinel.telegraph,'line');assert.equal(sentinel.attackVariant,1);
+ assert.ok(sentinel.damage>plague.damage);
 });
 
 test('Ironroot Golem has three increasingly aggressive combat phases',()=>{
@@ -125,16 +145,18 @@ test('phase two root burst and phase three enlarged slam use boss-specific damag
  assert.ok(slammed.hp<100);assert.ok(slammed.events.some(e=>e.includes('phase 3')));
 });
 
-test('world migration adds forest enemies once and preserves existing damage and respawn',()=>{
+test('world migration appends normal and elite forest enemies once while preserving saved combat state',()=>{
  const old=initialState().monsters;old[0].hp=7;
- const seeded=seedWoods(old);assert.equal(seeded.length,old.length+7);assert.equal(seeded[0].hp,7);
+ const seeded=seedWoods(old);assert.equal(seeded.length,old.length+9);assert.equal(seeded[0].hp,7);
  const boss=seeded.find(m=>m.id===26);boss.hp=-2;boss.respawn=900000;
+ const elite=seeded.find(m=>m.id===27);elite.hp=-5;elite.respawn=800000;
  const again=seedWoods(seeded);assert.equal(again.length,seeded.length);
  assert.equal(again.find(m=>m.id===26).hp,-2);assert.equal(again.find(m=>m.id===26).respawn,900000);
+ assert.equal(again.find(m=>m.id===27).hp,-5);assert.equal(again.find(m=>m.id===27).respawn,800000);
  assert.equal(WOODS_SPAWNS[6].hp,700);
 });
 
-test('Moss quest requires proximity, six forest kills and a boss, and pays once',()=>{
+test('Moss quest requires proximity, six standard forest kills and a boss, and pays once',()=>{
  let s=initialState();s.monsters=[];
  s=advance(s,{type:'interact',target:'ranger'},0,100000);assert.equal(s.woodsQuest,undefined);
  s.x=2470;s.y=760;s=advance(s,{type:'interact',target:'ranger'},0,100000);
@@ -172,4 +194,51 @@ test('forest creature kills advance only the forest quest and pay species salvag
  assert.equal(n.woodsKills,1);assert.equal(n.questKills,0);
  assert.equal(n.scrap,16);assert.equal(n.circuits,1);assert.equal(n.xp,23);
  assert.ok(n.events.some(e=>e.includes('Sap resin')));
+});
+
+test('elite finishing blows grant tuned salvage, guaranteed rare gear and five-minute shared respawn',()=>{
+ const now=100000,elite={...WOODS_ELITE_SPAWNS[0],hp:1};
+ const s={...initialState(),x:elite.x-40,y:elite.y,woodsQuest:'active',monsters:[elite],strike:{at:now,dx:1,dy:0,kind:'blade',damage:30}};
+ const n=advance(s,{type:'tick'},0,now);
+ assert.equal(n.scrap,30);assert.equal(n.circuits,3);assert.equal(n.xp,38);
+ assert.equal(n.monsters[0].respawn,now+300000);
+ assert.ok(n.events.some(e=>e.includes('Plaguewing cache')));
+ assert.ok(n.events.some(e=>e.includes('ELITE RARE LOOT')));
+ assert.ok(n.loot?.some(item=>item.key==='reinforced_vest'));
+ // Optional elites do not replace the six standard-creature requirement for Roots of Rust.
+ assert.equal(n.woodsKills??0,0);
+});
+
+test('Hauler Sentinel guarantees the rare forest weapon',()=>{
+ const now=100000,elite={...WOODS_ELITE_SPAWNS[1],hp:1};
+ const s={...initialState(),x:elite.x-40,y:elite.y,monsters:[elite],strike:{at:now,dx:1,dy:0,kind:'blade',damage:30}};
+ const n=advance(s,{type:'tick'},0,now);
+ assert.equal(n.scrap,36);assert.equal(n.circuits,4);assert.equal(n.xp,44);
+ assert.ok(n.loot?.some(item=>item.key==='neon_blade'));
+ assert.equal(n.monsters[0].respawn,now+300000);
+});
+
+test('landmark recovery unlocks only while its elite is defeated and pays once per UTC day',()=>{
+ const now=Date.UTC(2026,8,15,12),event=woodsEvent('whisper-purge'),elite={...WOODS_ELITE_SPAWNS[0],hp:-1,respawn:now+300000};
+ let s={...initialState(),x:event.x,y:event.y,monsters:[elite]};
+ s=advance(s,{type:'woods_event',target:event.id},0,now);
+ assert.equal(s.scrap,40);assert.equal(s.circuits,2);assert.equal(s.xp,45);
+ assert.ok(s.daily.caches.includes(event.claimKey));assert.ok(s.events.some(e=>e.includes('Whisper Grove Purge complete')));
+ s=advance(s,{type:'woods_event',target:event.id},0,now+1000);
+ assert.equal(s.scrap,40);assert.equal(s.circuits,2);assert.equal(s.xp,45);
+ assert.ok(s.events.some(e=>e.includes('already recovered today')));
+ const alive={...initialState(),x:event.x,y:event.y,monsters:[{...WOODS_ELITE_SPAWNS[0],hp:100}]};
+ const locked=advance(alive,{type:'woods_event',target:event.id},0,now);
+ assert.equal(locked.scrap,0);assert.ok(locked.events.some(e=>e.includes('elite threat still active')));
+});
+
+test('shared elite death is authoritative and only the finishing player gets rare loot',()=>{
+ const now=100000,elite={...WOODS_ELITE_SPAWNS[1],hp:20};
+ const state={...initialState(),x:elite.x-40,y:elite.y,strike:{at:now,dx:1,dy:0,kind:'blade',damage:30}};
+ const result=stepWorld([elite],[{id:'a',state},{id:'b',state:structuredClone(state)}],0,now);
+ const players=[...result.players.values()],winner=players.find(p=>p.kills===1);
+ assert.equal(players.reduce((sum,p)=>sum+p.kills,0),1);
+ assert.ok(winner?.loot?.some(item=>item.key==='neon_blade'));
+ assert.equal(result.monsters[0].respawn,now+300000);
+ for(const player of players)assert.deepEqual(player.monsters,result.monsters);
 });
