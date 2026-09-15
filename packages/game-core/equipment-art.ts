@@ -33,6 +33,17 @@ export const EQUIPMENT_ART = [
     "description": "Neon Blaster: reclaimed wasteland equipment from Trash Town."
   },
   {
+    "id": "hauler-arc-blaster",
+    "name": "Hauler Arc Blaster",
+    "image": "/assets/equipment/neon-blaster.svg",
+    "slot": "weapon",
+    "rarity": "rare",
+    "damage": 16,
+    "armor": 0,
+    "minLevel": 1,
+    "description": "Hauler Arc Blaster: a tuned Rust Hauler weapon recovered from the Sentinel event."
+  },
+  {
     "id": "wasteland-wrench",
     "name": "Wasteland Wrench",
     "image": "/assets/equipment/wasteland-wrench.svg",
@@ -53,6 +64,17 @@ export const EQUIPMENT_ART = [
     "armor": 4,
     "minLevel": 1,
     "description": "Scavenger Hood: reclaimed wasteland equipment from Trash Town."
+  },
+  {
+    "id": "whisper-mantle",
+    "name": "Whisper Mantle",
+    "image": "/assets/equipment/scavenger-hood.svg",
+    "slot": "armor",
+    "rarity": "rare",
+    "damage": 0,
+    "armor": 6,
+    "minLevel": 1,
+    "description": "Whisper Mantle: reinforced forest armor recovered from Whisper Plaguewing."
   },
   {
     "id": "salvager-vest",
@@ -89,4 +111,4 @@ export const EQUIPMENT_ART = [
   }
 ] as const;
 export function isEquipmentArt(value:string){return EQUIPMENT_ART.some(item=>item.image===value)}
-export const GEAR_ART = {rusty_blade:"rusty-fang",neon_blade:"neon-blaster",king_blade:"scrap-hammer",scrap_vest:"salvager-vest",reinforced_vest:"scavenger-hood",king_armor:"king-gauntlets"} as const;
+export const GEAR_ART = {rusty_blade:"rusty-fang",neon_blade:"neon-blaster",hauler_arc_blaster:"hauler-arc-blaster",king_blade:"scrap-hammer",scrap_vest:"salvager-vest",reinforced_vest:"scavenger-hood",whisper_mantle:"whisper-mantle",king_armor:"king-gauntlets"} as const;
