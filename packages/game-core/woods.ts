@@ -97,7 +97,7 @@ export const WOODS_SPAWNS=[
 
 export const WOODS_ELITE_SPAWNS=[
  {id:27,x:3060,y:390,kind:'bug',species:'whisper-plaguewing',hp:360,respawn:0,elite:true},
- {id:28,x:3220,y:1360,kind:'bug',species:'hauler-sentinel',hp:480,respawn:0,elite:true},
+ {id:28,x:3180,y:1430,kind:'bug',species:'hauler-sentinel',hp:480,respawn:0,elite:true},
 ] as const;
 
 export const WOODS_ALL_SPAWNS=[...WOODS_SPAWNS,...WOODS_ELITE_SPAWNS] as const;
