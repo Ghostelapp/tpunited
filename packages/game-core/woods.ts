@@ -1,5 +1,6 @@
 // Stable IDs keep shared-world saves compatible across deployments.
 export const WOODS_START=2400;
+export const WOODS_EXIT={x:3690,y:820,name:'Junkyard Valley Gate'} as const;
 
 // Species keys are intentionally stable internal encounter IDs. Player-facing names
 // live in WOODS_PROFILES and can evolve without rewriting shared-world saves.
@@ -121,6 +122,7 @@ export const WOODS_LANDMARKS=[
  {id:'whisper-grove',name:'Whisper Grove',x:3060,y:330,kind:'grove'},
  {id:'rust-wreck',name:'Rust Hauler Wreck',x:3180,y:1370,kind:'wreck'},
  {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},
+ {id:'junkyard-gate',name:'Junkyard Valley Gate',x:WOODS_EXIT.x,y:WOODS_EXIT.y,kind:'gate'},
 ] as const;
 
 export const WOODS_EVENTS:readonly WoodsLandmarkEvent[]=[

@@ -1,4 +1,4 @@
-import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';
+import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_EXIT,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';
 
 function patch(g:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){
  g.fillStyle=color;g.beginPath();g.ellipse(x,y,w,h,0,0,Math.PI*2);g.fill();
@@ -85,9 +85,9 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
  // Main road stays wide through the town/forest transition and gradually becomes
  // a dirt trail as it bends toward Ironroot Grove.
  g.strokeStyle='#4b493b';g.lineWidth=118;g.lineCap='round';g.lineJoin='round';g.beginPath();
- g.moveTo(2180,760);g.lineTo(2460,760);g.lineTo(2670,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.stroke();
+ g.moveTo(2180,760);g.lineTo(2460,760);g.lineTo(2670,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();
  g.strokeStyle='#74664b';g.lineWidth=82;g.beginPath();
- g.moveTo(2380,760);g.lineTo(2660,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.stroke();
+ g.moveTo(2380,760);g.lineTo(2660,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();
  g.strokeStyle='#907958';g.lineWidth=3;g.setLineDash([18,26]);g.stroke();g.setLineDash([]);
 
  // Moss trail camp. Kept outside the road collision corridor.
@@ -118,6 +118,13 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
   const a=i*Math.PI/4+.18,x1=3540+Math.cos(a)*42,y1=820+Math.sin(a)*26,x2=3540+Math.cos(a)*142,y2=820+Math.sin(a)*112;
   g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo((x1+x2)/2+Math.sin(a)*17,(y1+y2)/2-Math.cos(a)*12,x2,y2);g.stroke();
  }
+
+ // Expedition checkpoint gives the current map a deliberate eastern finish while
+ // keeping the future Junkyard Valley route visually continuous.
+ g.fillStyle='#443a2f';g.fillRect(WOODS_EXIT.x-45,WOODS_EXIT.y-92,12,82);g.fillRect(WOODS_EXIT.x+33,WOODS_EXIT.y-92,12,82);
+ g.fillStyle='#756247';g.fillRect(WOODS_EXIT.x-49,WOODS_EXIT.y-98,98,12);
+ g.fillStyle='#202a29';g.fillRect(WOODS_EXIT.x-58,WOODS_EXIT.y-132,116,28);g.strokeStyle='#aa9658';g.lineWidth=2;g.strokeRect(WOODS_EXIT.x-58,WOODS_EXIT.y-132,116,28);
+ g.fillStyle='#e2cf86';g.font='bold 10px monospace';g.textAlign='center';g.fillText('JUNKYARD VALLEY →',WOODS_EXIT.x,WOODS_EXIT.y-114);g.textAlign='left';
 
  g.fillStyle='#c6d799';g.font='bold 22px monospace';g.fillText('RUSTY WOODS · LVL 5–10',2420,640);
  g.font='14px monospace';g.fillStyle='#b8c79b';g.fillText('← TRASH TOWN',2300,900);g.fillText('IRONROOT GROVE →',3260,900);
