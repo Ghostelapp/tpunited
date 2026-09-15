@@ -1,4 +1,5 @@
-import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_EXIT,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';
+import {drawForestProp} from './forest-props.ts';
+import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_EXIT,WOODS_START,WOODS_TREES} from '../../packages/game-core/woods.ts';
 
 function patch(g:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){
  g.fillStyle=color;g.beginPath();g.ellipse(x,y,w,h,0,0,Math.PI*2);g.fill();
@@ -63,11 +64,7 @@ function eliteGround(g:CanvasRenderingContext2D){
 export function drawWoodsGround(g:CanvasRenderingContext2D){
  // Transition starts before the official region border so the road does not jump
  // straight from town pavement into a solid forest rectangle.
- g.fillStyle='#26382f';g.fillRect(WOODS_START-155,90,155,1480);
- for(let i=0;i<32;i++){
-  const x=WOODS_START-155+(i*73)%170,y=120+(i*113)%1410;
-  patch(g,x,y,42+(i%4)*15,24+(i%3)*10,i%3===0?'#40513d':'#314638');
- }
+ const transition=g.createLinearGradient(WOODS_START-155,0,WOODS_START,0);transition.addColorStop(0,'#283239');transition.addColorStop(1,'#172f29');g.fillStyle=transition;g.fillRect(WOODS_START-155,90,155,1480);
  g.fillStyle='#172f29';g.fillRect(WOODS_START,50,1400,1580);
 
  // Large organic ground patches give the woods readable clearings rather than
@@ -76,10 +73,10 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
   [2580,410,185,95,'#213a2e'],[2890,690,210,120,'#2b4030'],[3170,420,180,100,'#20392c'],
   [3370,1000,240,135,'#283d2f'],[2940,1280,235,120,'#243b30'],[3550,460,160,90,'#314433'],
  ] as const;
- for(const [x,y,w,h,color] of groundPatches)patch(g,x,y,w,h,color);
- for(let i=0;i<520;i++){
-  const x=WOODS_START+(i*137)%1350,y=90+(i*79)%1500;
-  g.fillStyle=i%4?'#294337':'#4b5034';g.fillRect(x,y,2+i%4,2);
+ for(const [x,y,w,h,color] of groundPatches){g.save();g.globalAlpha=.4;patch(g,x,y,w,h,color);g.restore();}
+ for(let i=0;i<14000;i++){
+  const x=WOODS_START+(i*137.37)%1350,y=90+(i*79.71)%1500;
+  g.fillStyle=i%4?'#3d543b32':'#9c8c5630';g.fillRect(x,y,2+i%4,2);
  }
 
  // Main road stays wide through the town/forest transition and gradually becomes
@@ -88,11 +85,12 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
  g.moveTo(2180,760);g.lineTo(2460,760);g.lineTo(2670,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();
  g.strokeStyle='#74664b';g.lineWidth=82;g.beginPath();
  g.moveTo(2380,760);g.lineTo(2660,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();
- g.strokeStyle='#907958';g.lineWidth=3;g.setLineDash([18,26]);g.stroke();g.setLineDash([]);
+ // Gravel breaks up the dirt ribbon without road lane markings.
+ for(let i=0;i<3600;i++){const x=2370+(i*91.71)%1300,y=760+Math.min(1,Math.max(0,(x-2670)/270))*65+Math.sin(i*73.41)*45;g.fillStyle=i%3?'#b19d6838':'#233e3038';g.fillRect(x,y,2+i%4,2+i%3);}
 
  // Moss trail camp. Kept outside the road collision corridor.
- g.fillStyle='#3a3428';g.fillRect(2390,675,155,146);
- g.strokeStyle='#9d8453';g.lineWidth=3;g.strokeRect(2390,675,155,146);
+ g.fillStyle='#554b35';patch(g,2470,760,92,64,'#554b35');
+ 
  g.fillStyle='#6d5639';g.fillRect(2412,705,54,13);g.fillRect(2486,742,34,10);
  g.fillStyle='#d18a45';g.beginPath();g.arc(2470,790,13,0,Math.PI*2);g.fill();
  g.fillStyle='#f0bd58';g.beginPath();g.arc(2470,790,6,0,Math.PI*2);g.fill();
@@ -137,36 +135,13 @@ const FOREST_DETAILS=[
  {x:3650,y:1010,type:'stump'},{x:2700,y:1160,type:'rock'},{x:3500,y:1320,type:'mushroom'},
 ] as const;
 
-function detailObject(ctx:CanvasRenderingContext2D,d:typeof FOREST_DETAILS[number]){return {y:d.y,draw:()=>{
- ctx.save();ctx.translate(d.x,d.y);
- ctx.fillStyle='#0a171a77';ctx.beginPath();ctx.ellipse(0,3,d.type==='rock'?23:18,7,0,0,Math.PI*2);ctx.fill();
- if(d.type==='stump'){
-  ctx.fillStyle='#4d3529';ctx.fillRect(-12,-28,24,29);ctx.fillStyle='#8a6342';ctx.beginPath();ctx.ellipse(0,-27,12,5,0,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='#31241d';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-27,6,0,Math.PI*2);ctx.stroke();
- }else if(d.type==='mushroom'){
-  for(const [dx,h] of [[-10,17],[4,23],[15,14]] as const){ctx.fillStyle='#d8cfab';ctx.fillRect(dx,-h,4,h);ctx.fillStyle='#b96f4a';ctx.beginPath();ctx.arc(dx+2,-h,7,Math.PI,Math.PI*2);ctx.fill();}
- }else{
-  ctx.fillStyle='#4a5550';ctx.beginPath();ctx.moveTo(-22,0);ctx.lineTo(-13,-20);ctx.lineTo(8,-28);ctx.lineTo(23,-7);ctx.lineTo(17,2);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#6d7770';ctx.beginPath();ctx.moveTo(-12,-17);ctx.lineTo(8,-25);ctx.lineTo(16,-9);ctx.closePath();ctx.fill();
- }
- ctx.restore();
- }};}
-
-export function woodsObjects(ctx:CanvasRenderingContext2D){
+export function woodsObjects(ctx:CanvasRenderingContext2D,image:CanvasImageSource,player?:{x:number;y:number}){
  const trees=WOODS_TREES.map(t=>({y:t.y,draw:()=>{
-  const scale=t.scale??1,variant=t.variant??0;
-  ctx.save();ctx.translate(t.x,t.y);ctx.scale(scale,scale);
-  ctx.fillStyle='#0a171a88';ctx.beginPath();ctx.ellipse(4,-2,48,11,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=variant%2?'#5a3f31':'#654332';ctx.fillRect(-16,-105,32,108);
-  ctx.fillStyle='#a37747';ctx.fillRect(-10,-92,7,95);
-  const crown=variant%3===0?72:variant%3===1?62:67;
-  for(let i=0;i<3;i++){
-   ctx.fillStyle=[variant%2?'#183c31':'#1c4033',variant%2?'#2a573b':'#315e3d',variant%2?'#4d6b41':'#547244'][i];
-   ctx.beginPath();ctx.moveTo(0,-190+i*36);ctx.lineTo(crown-i*9,-80+i*24);ctx.lineTo(-crown+i*9,-80+i*24);ctx.closePath();ctx.fill();
-  }
-  if(variant===2||variant===4){ctx.fillStyle='#788054';ctx.fillRect(-40,-76,18,7);ctx.fillRect(27,-57,21,6);}
-  if(variant===1||variant===3){ctx.fillStyle='#cf9556';ctx.fillRect(19,-37,13,7);ctx.fillRect(-27,-23,10,6);}
-  ctx.restore();
+  const size=145*(t.scale??1),index=(t.variant??0)%3===0?7:6;
+  ctx.save();if(player&&Math.abs(player.x-t.x)<size*.5&&player.y<t.y&&player.y>t.y-size)ctx.globalAlpha=.35;
+  drawForestProp(ctx,image,index,t.x,t.y,size);ctx.restore();
  }}));
- return [...trees,...FOREST_DETAILS.map(d=>detailObject(ctx,d))];
+ const details=FOREST_DETAILS.map(d=>({y:d.y,draw:()=>drawForestProp(ctx,image,d.type==='stump'?8:d.type==='rock'?10:11,d.x,d.y,d.type==='stump'?85:65)}));
+ const camp=[{index:2,x:2370,y:645,size:95},{index:4,x:2480,y:600,size:125},{index:3,x:2570,y:965,size:125},{index:5,x:2590,y:800,size:60}];
+ return [...trees,...details,...camp.map(p=>({y:p.y,draw:()=>drawForestProp(ctx,image,p.index,p.x,p.y,p.size)}))];
 }

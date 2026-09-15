@@ -37,12 +37,12 @@ export const WOODS_MONSTER_ATLAS:Record<WoodsAtlasMonster,AtlasEntry>={
   attack:[[625,716,175,101],[790,716,165,101]],hurt:[950,716,140,101],death:[1080,716,165,101],size:[154,110],
  },
  'riot-bot':{
-  idle:[205,830,135,92],move:[[345,830,145,92],[495,830,145,92]],
-  attack:[[630,830,160,92],[785,830,170,92]],hurt:[945,830,140,92],death:[1060,830,185,92],size:[116,84],
+  idle:[210,960,112,73],move:[[338,960,112,73],[210,960,112,73]],
+  attack:[[453,960,145,73],[707,960,205,73]],hurt:[915,960,121,73],death:[1040,960,205,73],size:[116,84],
  },
  'plague-pigeon':{
-  idle:[205,1060,130,68],move:[[345,1060,150,68],[205,1060,130,68]],
-  attack:[[495,1060,165,68],[655,1060,190,68]],hurt:[845,1060,135,68],death:[975,1060,145,68],size:[104,64],hover:6,
+  idle:[211,1057,105,60],move:[[343,1057,117,60],[211,1057,105,60]],
+  attack:[[471,1057,161,60],[633,1057,188,60]],hurt:[822,1057,127,60],death:[956,1057,130,60],size:[104,64],hover:6,
  },
 };
 
@@ -52,7 +52,7 @@ export function woodsMonsterPoseFrame(id:number,pose:WoodsMonsterPose,distance=0
  if(pose==='hurt')return entry.hurt;
  if(pose==='death')return entry.death;
  if(pose==='attack')return entry.attack[Math.min(entry.attack.length-1,Math.max(0,attackVariant))]??entry.attack[0]??entry.idle;
- if(pose==='move'&&entry.move.length)return entry.move[Math.floor(distance/14)%entry.move.length];
+ if(pose==='move'&&entry.move.length)return [entry.idle,...entry.move,entry.move[0]][Math.floor(Math.max(0,distance)/20)%(entry.move.length+2)];
  return entry.idle;
 }
 
@@ -76,10 +76,11 @@ export function drawWoodsMonster(
  const entry=WOODS_MONSTER_ATLAS[profile.atlasMonster];
  const resolvedPose=pose??(flash?'hurt':walking?'move':'idle');
  const frame=woodsMonsterPoseFrame(id,resolvedPose,distance,attackVariant)!;
- const [sx,sy,sw,sh]=frame,[baseW,baseH]=entry.size,w=baseW*profile.scale,h=baseH*profile.scale;
+ const [sx,sy,sw,sh]=frame,[baseW,baseH]=entry.size;
+ const scale=Math.min(baseW/entry.idle[2],baseH/entry.idle[3])*profile.scale,w=sw*scale,h=sh*scale;
  const hover=entry.hover&&resolvedPose!=='death'?Math.sin(now/180+id)*entry.hover:0;
- const attackPulse=resolvedPose==='attack'?1+Math.sin(now/75+id)*.035:1;
- ctx.save();ctx.scale(attackPulse,1/attackPulse);ctx.filter=flash&&resolvedPose!=='hurt'?'brightness(2.15)':profile.filter;
+ 
+ ctx.save();ctx.filter=flash&&resolvedPose!=='hurt'?'brightness(2.15)':profile.filter;
  ctx.drawImage(image,sx,sy,sw,sh,-w/2,-h+6+hover,w,h);ctx.restore();
  return true;
 }

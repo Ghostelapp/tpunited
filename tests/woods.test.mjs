@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {GEAR,initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
 import {WOODS_ALL_SPAWNS,WOODS_ELITE_SPAWNS,WOODS_ENCOUNTER_DETAILS,WOODS_EVENTS,WOODS_EXIT,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,isWoodsElite,seedWoods,woodsEvent,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile,woodsRespawnDelay} from '../packages/game-core/woods.ts';
 import {woodsAttackVariant,woodsBossPhase,woodsSkillSpec} from '../packages/game-core/woods-combat.ts';
-import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame,woodsMonsterPoseFrame} from '../components/tpu/woods-monsters.ts';
+import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame,woodsMonsterPoseFrame,drawWoodsMonster} from '../components/tpu/woods-monsters.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
 import {GEAR_ART} from '../packages/game-core/equipment-art.ts';
 
@@ -250,4 +250,18 @@ test('shared elite death is authoritative and only the finishing player gets rar
  assert.ok(winner?.loot?.some(item=>item.key==='hauler_arc_blaster'));
  assert.equal(result.monsters[0].respawn,now+300000);
  for(const player of players)assert.deepEqual(player.monsters,result.monsters);
+});
+
+test('monster poses preserve source aspect ratio and a stable ground anchor',()=>{
+ for(const spawn of WOODS_ALL_SPAWNS)for(const pose of ['idle','move','attack','hurt','death']){
+ let args;const ctx={save(){},restore(){},drawImage(...a){args=a;}};
+ assert.equal(drawWoodsMonster(ctx,{complete:true,naturalWidth:1254},spawn.id,pose==='move',40,10000,false,pose),true);
+ const [,sx,sy,sw,sh,x,y,w,h]=args;assert.ok(Math.abs(w/h-sw/sh)<1e-9,'sprite must not stretch');
+ const entry=WOODS_MONSTER_ATLAS[woodsMonsterProfile(spawn.id).atlasMonster];const expected=Math.min(entry.size[0]/entry.idle[2],entry.size[1]/entry.idle[3])*woodsMonsterProfile(spawn.id).scale;
+ assert.ok(Math.abs(w/sw-expected)<1e-9,'all poses share the same scale');assert.ok(Math.abs(x+w/2)<1e-9);
+ }
+});
+test('walk cycle contains a neutral passing pose and does not alternate only two images',()=>{
+ const id=WOODS_SPAWNS[0].id,entry=WOODS_MONSTER_ATLAS[woodsMonsterProfile(id).atlasMonster];
+ assert.deepEqual(woodsMonsterPoseFrame(id,'move',0),entry.idle);assert.deepEqual(woodsMonsterPoseFrame(id,'move',20),entry.move[0]);assert.deepEqual(woodsMonsterPoseFrame(id,'move',40),entry.move[1]);
 });
