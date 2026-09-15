@@ -1,0 +1,62 @@
+name: Apply Rusty Woods event systems
+on:
+  push:
+    branches: [feat/rusty-woods-events-elites]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/rusty-woods-events-elites
+      - name: Patch authoritative elite and landmark event logic
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const file='packages/game-core/world.ts';
+          let s=fs.readFileSync(file,'utf8');
+          const once=(from,to,label)=>{const n=s.split(from).length-1;if(n!==1)throw new Error(`${label}: expected 1 anchor, found ${n}`);s=s.replace(from,to);};
+          once(
+            "import {WOODS_SPAWNS,WOODS_TREES,isWoodsMonster,woodsMonsterHealth,woodsKillReward} from './woods.ts';",
+            "import {WOODS_ALL_SPAWNS,WOODS_TREES,isWoodsMonster,isWoodsElite,woodsMonsterHealth,woodsKillReward,woodsRespawnDelay,woodsEvent} from './woods.ts';",
+            'woods import'
+          );
+          once(
+            "export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage'|'dodge'|'legacy_claim'|'legacy_pin'|'legacy_title';dx?:number;dy?:number;target?:string};",
+            "export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'woods_event'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage'|'dodge'|'legacy_claim'|'legacy_pin'|'legacy_title';dx?:number;dy?:number;target?:string};",
+            'intent union'
+          );
+          once(
+            "export function monsterHome(id:number){const woods=WOODS_SPAWNS.find(m=>m.id===id);if(woods)return {x:woods.x,y:woods.y};if(id>=100)return DUNGEON_SPAWNS[id-100]??DUNGEON.spawn;return {x:1930+(id%3)*130,y:480+Math.floor(id/3)*230}}",
+            "export function monsterHome(id:number){const woods=WOODS_ALL_SPAWNS.find(m=>m.id===id);if(woods)return {x:woods.x,y:woods.y};if(id>=100)return DUNGEON_SPAWNS[id-100]??DUNGEON.spawn;return {x:1930+(id%3)*130,y:480+Math.floor(id/3)*230}}",
+            'monster home'
+          );
+          const award=`function awardLoot(s:GameState,m:Monster,now:number){\n const random=new Uint32Array(2);crypto.getRandomValues(random);const key=lootKey(m.kind??'slime',random[0]/4294967296,random[1]/4294967296);if(!key)return;s.loot??=[];\n if(s.loot.length>=40){const scrap=m.kind==='boss'?40:5;s.scrap+=scrap;s.events.push(\`Stash full: loot salvaged for ${'${scrap}'} Scrap.\`);return;}\n s.loot.push({id:\`loot-${'${now}'}-${'${s.kills}'}\`,key});s.events.push(\`${'${GEAR[key].rarity.toUpperCase()}'} LOOT: ${'${GEAR[key].name}'} · open I to equip\`);\n}`;
+          const awardPlus=award+`\nfunction awardGuaranteedLoot(s:GameState,key:keyof typeof GEAR,now:number,tag:string){\n s.loot??=[];if(s.loot.length>=40){s.scrap+=15;s.events.push('Stash full: elite rare loot salvaged for 15 Scrap.');return;}\n s.loot.push({id:\`loot-${'${tag}'}-${'${now}'}-${'${s.kills}'}\`,key});s.events.push(\`ELITE RARE LOOT: ${'${GEAR[key].name}'} · open I to equip\`);\n}`;
+          once(award,awardPlus,'guaranteed elite loot helper');
+          once(
+            "hit.respawn=now+(isWoodsMonster(hit.id)&&hit.kind==='boss'?120000:25000);",
+            "hit.respawn=now+(isWoodsMonster(hit.id)?woodsRespawnDelay(hit.id):25000);",
+            'respawn delay'
+          );
+          once(
+            "awardLoot(next,hit,now);if(hit.kind==='boss'&&next.interior===11&&next.dungeon)",
+            "if(isWoodsElite(hit.id))awardGuaranteedLoot(next,hit.id===27?'reinforced_vest':'neon_blade',now,`elite-${hit.id}`);else awardLoot(next,hit,now);if(hit.kind==='boss'&&next.interior===11&&next.dungeon)",
+            'elite rare loot'
+          );
+          const cacheBlock=` if(a.type==='cache'){\n const cache=CACHES.find(c=>c.id===a.target);\n if(next.interior!==undefined||!cache||Math.hypot(next.x-cache.x,next.y-cache.y)>85)next.events.push('Move closer to a salvage cache.');\n else if(next.daily.caches.includes(cache.id))next.events.push('Already searched today. Restocked at 00:00 UTC.');\n else {next.daily.caches.push(cache.id);next.scrap+=20;next.circuits++;next.xp+=10;next.events.push('Hidden salvage found! +20 Scrap · +1 circuit · +10 XP');}\n }`;
+          const eventBlock=cacheBlock+`\n if(a.type==='woods_event'){\n const event=woodsEvent(a.target??'');const elite=event?next.monsters.find(m=>m.id===event.eliteId):undefined;\n if(next.interior!==undefined||!event||Math.hypot(next.x-event.x,next.y-event.y)>105)next.events.push('Move closer to the landmark recovery point.');\n else if(!elite||elite.hp>0||now>=elite.respawn)next.events.push(\`${'${event.name}'} · elite threat still active.\`);\n else if(next.daily.caches.includes(event.claimKey))next.events.push(\`${'${event.name}'} · reward already recovered today.\`);\n else {next.daily.caches.push(event.claimKey);next.scrap+=event.reward.scrap;next.circuits+=event.reward.circuits;next.xp+=event.reward.xp;next.events.push(\`${'${event.name}'} complete · +${'${event.reward.scrap}'} Scrap · +${'${event.reward.circuits}'} circuits · +${'${event.reward.xp}'} XP\`);}\n }`;
+          once(cacheBlock,eventBlock,'landmark event interaction');
+          fs.writeFileSync(file,s);
+          NODE
+      - name: Commit world event patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add packages/game-core/world.ts
+          git diff --cached --check
+          git commit -m "Add authoritative forest elite events [skip ci]"
+          git push origin HEAD:feat/rusty-woods-events-elites
