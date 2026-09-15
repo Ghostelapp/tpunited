@@ -1,7 +1,7 @@
 import {woodsMonsterHealth} from './woods.ts';
 
 export type WoodsSkill=
- 'eel-shock'|'hound-charge'|'bat-dive'|'roach-spit'|'wasp-burst'|'serpent-storm'|'root-burst';
+ 'eel-shock'|'hound-charge'|'bat-dive'|'roach-spit'|'wasp-burst'|'serpent-storm'|'root-burst'|'plague-drop'|'sentinel-charge';
 
 export type WoodsTelegraph='circle'|'line'|'ring';
 export type WoodsSkillSpec={
@@ -29,6 +29,8 @@ const WOODS_SKILLS:Record<number,WoodsSkillSpec>={
  23:{skill:'roach-spit',label:'ASH SPIT',range:260,radius:58,windup:900,cooldown:2700,damage:15,origin:'target',telegraph:'circle',attackVariant:0,color:'#9ccf46',moveSpeed:64,stopDistance:128},
  24:{skill:'wasp-burst',label:'RUST BURST',range:300,radius:45,windup:750,cooldown:2400,damage:18,origin:'target',telegraph:'line',attackVariant:0,color:'#d68b3b',moveSpeed:74,stopDistance:152},
  25:{skill:'serpent-storm',label:'CABLE STORM',range:155,radius:125,windup:1000,cooldown:3200,damage:22,origin:'self',telegraph:'ring',attackVariant:0,color:'#b85fc8',moveSpeed:58,stopDistance:78},
+ 27:{skill:'plague-drop',label:'PLAGUE DROP',range:285,radius:82,windup:850,cooldown:2600,damage:22,origin:'target',telegraph:'circle',attackVariant:0,color:'#8bd64b',moveSpeed:92,stopDistance:165},
+ 28:{skill:'sentinel-charge',label:'SENTINEL CHARGE',range:260,radius:72,windup:900,cooldown:2900,damage:26,origin:'impact',telegraph:'line',attackVariant:1,color:'#59cce8',moveSpeed:68,stopDistance:135,dashMs:620,dashScale:.36},
 };
 
 export type WoodsBossPhase={
