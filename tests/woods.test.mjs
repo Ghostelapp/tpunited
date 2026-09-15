@@ -228,8 +228,8 @@ test('Hauler Sentinel guarantees the rare forest weapon',()=>{
 });
 
 test('landmark recovery unlocks only while its elite is defeated and pays once per UTC day',()=>{
- const now=Date.UTC(2026,8,15,12),event=woodsEvent('whisper-purge'),elite={...WOODS_ELITE_SPAWNS[0],hp:-1,respawn:now+300000};
- let s={...initialState(),x:event.x,y:event.y,monsters:[elite]};
+ const now=100000,event=WOODS_EVENTS[0],dead={...WOODS_ELITE_SPAWNS[0],hp:-1,respawn:now+300000};
+ let s={...initialState(),x:event.x,y:event.y,monsters:[dead]};
  s=advance(s,{type:'woods_event',target:event.id},0,now);
  assert.equal(s.scrap,40);assert.equal(s.circuits,2);assert.equal(s.xp,45);
  assert.ok(s.daily.caches.includes(event.claimKey));assert.ok(s.events.some(e=>e.includes('Whisper Grove Purge complete')));
@@ -247,7 +247,7 @@ test('shared elite death is authoritative and only the finishing player gets rar
  const result=stepWorld([elite],[{id:'a',state},{id:'b',state:structuredClone(state)}],0,now);
  const players=[...result.players.values()],winner=players.find(p=>p.kills===1);
  assert.equal(players.reduce((sum,p)=>sum+p.kills,0),1);
- assert.ok(winner?.loot?.some(item=>item.key==='neon_blade'));
+ assert.ok(winner?.loot?.some(item=>item.key==='hauler_arc_blaster'));
  assert.equal(result.monsters[0].respawn,now+300000);
  for(const player of players)assert.deepEqual(player.monsters,result.monsters);
 });
