@@ -55,7 +55,7 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  for(const m of activeMonsters(next)){
  if(options.monsterIds&&!options.monsterIds.has(m.id))continue;
  m.kind??=m.id<4?'slime':m.id<6?'rat':'bug';const home=monsterHome(m.id);
- if(m.hp<=0){if(next.interior!==11&&now>=m.respawn){m.hp=isWoodsMonster(m.id)?woodsMonsterHealth(m.id):m.kind==='bug'?100:m.kind==='rat'?40:60;Object.assign(m,home);m.mode='patrol';}continue;}
+ if(m.hp<=0){if(next.interior!==11&&now>=m.respawn){m.hp=isWoodsMonster(m.id)?woodsMonsterHealth(m.id):m.kind==='bug'?100:m.kind==='rat'?40:60;Object.assign(m,home);m.mode='patrol';delete m.windup;delete m.slamAt;delete m.navPath;delete m.navGoal;m.lastSkill=now;m.lastSlam=now;m.skillCycle=0;}continue;}
  const toPlayer=next.interior===undefined&&next.x<1740?Infinity:Math.hypot(m.x-next.x,m.y-next.y),fromHome=Math.hypot(m.x-home.x,m.y-home.y);
  if(fromHome>460||(next.interior===undefined&&m.x<1740))m.mode='return';
  if(m.mode==='return'&&fromHome<18)m.mode='patrol';
