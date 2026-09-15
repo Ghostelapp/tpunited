@@ -21,7 +21,7 @@ NPCS.push({id:'ranger',name:'Moss · Forest Ranger',x:2470,y:760,sx:195,sy:222,s
 export const parcels=Array.from({length:100},(_,i)=>({id:i+1,regionId:0,x:60+(i%10)*40,y:80+Math.floor(i/10)*40,width:32,height:32,rarity:i%17===0?'EPIC':i%5===0?'RARE':'COMMON',buildingSlots:i%17===0?6:i%5===0?4:2,status:i>=80?'SYSTEM':i>=70?'RESERVED':'UNRELEASED'}));
 export type Monster={woodsLayout?:number;windup?:{at:number;x:number;y:number;skill?:WoodsSkill};lastSkill?:number;skillCycle?:number;navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
 export type NftGear={id:string;tokenId:number;name:string;image:string;slot:GearSlot;rarity:"common"|"uncommon"|"rare"|"epic"|"legendary"|"mythic";damage:number;armor:number;minLevel:number};
-export type GameState={woodsLayout?:number;woodsQuest?:'active'|'complete';woodsKills?:number;woodsBoss?:boolean;stamina?:number;energy?:number;dodgeUntil?:number;lastDodge?:number;strike?:{at:number;dx:number;dy:number;kind:WeaponKind;damage:number;target?:number};hits?:{x:number;y:number;amount:number}[];legacy?:LegacyProgress;bandages?:number;bandage?:{until:number;remaining:number;credit:number};healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number;hits?:number;deaths?:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
+export type GameState={rustyWoodsEnabled?:boolean;woodsLayout?:number;woodsQuest?:'active'|'complete';woodsKills?:number;woodsBoss?:boolean;stamina?:number;energy?:number;dodgeUntil?:number;lastDodge?:number;strike?:{at:number;dx:number;dy:number;kind:WeaponKind;damage:number;target?:number};hits?:{x:number;y:number;amount:number}[];legacy?:LegacyProgress;bandages?:number;bandage?:{until:number;remaining:number;credit:number};healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number;hits?:number;deaths?:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
 export function initialState():GameState{return {...WORLD.spawn,townLayout:2,weaponLevel:0,salvageQuest:'available',bountyQuest:'available',bountyKills:0,hp:100,xp:0,scrap:0,circuits:0,medkits:2,kills:0,quest:'available',questKills:0,lastAttack:0,lastDamage:0,events:[],buildings:[],monsters:Array.from({length:8},(_,i)=>({id:i,kind:(i<4?'slime':i<6?'rat':'bug') as 'slime'|'rat'|'bug',x:1930+(i%3)*130,y:480+Math.floor(i/3)*230,hp:i<4?60:i<6?40:100,respawn:0}))}}
 export type Intent={type:'move'|'attack'|'interact'|'heal'|'craft'|'tick'|'buy_medkit'|'sell_circuit'|'upgrade'|'salvage_quest'|'bounty_quest'|'daily_claim'|'cache'|'woods_event'|'enter'|'exit'|'dungeon_enter'|'equip'|'unequip'|'salvage'|'dodge'|'legacy_claim'|'legacy_pin'|'legacy_title';dx?:number;dy?:number;target?:string};
 export type AdvanceOptions={monsterIds?:ReadonlySet<number>};
@@ -31,7 +31,7 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  if(a.type==='attack'||a.type==='dodge')next.restSince=now;
  next.stamina=Math.min(playerStats(next).stamina,(next.stamina??playerStats(next).stamina)+dt*18);next.energy=Math.min(playerStats(next).energy,(next.energy??playerStats(next).energy)+dt*8);
  if(['enter','exit','dungeon_enter'].includes(a.type))delete next.strike;
- if(a.type==='dodge'&&now-(next.lastDodge??0)>=900&&next.stamina>=30){const length=Math.hypot(a.dx??1,a.dy??0);if(length>0){next.stamina-=30;next.lastDodge=now;next.dodgeUntil=now+180;delete next.strike;Object.assign(next,movePosition(next,{dx:(a.dx??1)/length,dy:(a.dy??0)/length,ms:580},next.interior));}}
+ if(a.type==='dodge'&&now-(next.lastDodge??0)>=900&&next.stamina>=30){const length=Math.hypot(a.dx??1,a.dy??0);if(length>0){next.stamina-=30;next.lastDodge=now;next.dodgeUntil=now+180;delete next.strike;Object.assign(next,movePosition(next,{dx:(a.dx??1)/length,dy:(a.dy??0)/length,ms:580},next.interior,next.rustyWoodsEnabled));}}
  if(a.type==='attack'&&!next.strike&&(next.interior===undefined||next.interior===11)){
  const kind=weaponKind(next),spec=WEAPONS[kind],length=Math.hypot(a.dx??1,a.dy??0);
  if(length>0&&now-next.lastAttack>=spec.cooldown&&next.energy>=spec.energy){next.lastAttack=now;next.energy-=spec.energy;next.strike={at:now+spec.windup,...assistAim(next,(a.dx??1)/length,(a.dy??0)/length,kind),kind,damage:gearStats(next).damage};}
@@ -53,7 +53,7 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  if(next.interior!==undefined&&Math.hypot(next.x-sceneExit(next.interior).x,next.y-sceneExit(next.interior).y)<85){const door=next.interior===11?SEWER_DOOR:buildingDoor(next.interior);delete next.interior;Object.assign(next,door);next.events.push('Back in Trash Town.');return next;}
  next.events.push('Approach the exit at the bottom of the room.');return next;
  }
- if(a.type==='move')Object.assign(next,movePosition(next,{dx:a.dx??0,dy:a.dy??0,ms:dt*1000},next.interior));
+ if(a.type==='move')Object.assign(next,movePosition(next,{dx:a.dx??0,dy:a.dy??0,ms:dt*1000},next.interior,next.rustyWoodsEnabled));
  for(const m of activeMonsters(next)){
  if(options.monsterIds&&!options.monsterIds.has(m.id))continue;
  m.kind??=m.id<4?'slime':m.id<6?'rat':'bug';const home=monsterHome(m.id);
@@ -164,18 +164,18 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
 
 // Shared, bounded substeps prevent tunnelling and keep prediction identical to authority.
 export type MotionInput={dx:number;dy:number;ms:number};
-export function movePosition(p:{x:number;y:number},input:MotionInput,interior?:number){
+export function movePosition(p:{x:number;y:number},input:MotionInput,interior?:number,rustyWoodsEnabled=true){
  let {x,y}=p;const length=Math.max(1,Math.hypot(input.dx,input.dy));
  let remaining=Math.min(1000,Math.max(0,input.ms));
  while(remaining>0){const step=Math.min(8,remaining);remaining-=step;
- const nx=x+input.dx/length*190*step/1000;if(!sceneBlocked(nx,y,interior))x=nx;
+ const nx=x+input.dx/length*190*step/1000;if((interior!==undefined||rustyWoodsEnabled||nx<=2320)&&!sceneBlocked(nx,y,interior))x=nx;
  const ny=y+input.dy/length*190*step/1000;if(!sceneBlocked(x,ny,interior))y=ny;}
  return {x,y};
 }
-export function replayMotion(p:{x:number;y:number;interior?:number},inputs:MotionInput[]){return inputs.reduce((point,input)=>movePosition(point,input,p.interior),{x:p.x,y:p.y})}
+export function replayMotion(p:{x:number;y:number;interior?:number;rustyWoodsEnabled?:boolean},inputs:MotionInput[]){return inputs.reduce((point,input)=>movePosition(point,input,p.interior,p.rustyWoodsEnabled),{x:p.x,y:p.y})}
 export function applyMotion(s:GameState,inputs:MotionInput[],elapsed:number,batch:string){
  const next=structuredClone(s);let credit=Math.min(1000,(s.motionCredit??250)+Math.max(0,elapsed));
- for(const input of inputs){const ms=Math.min(input.ms,credit);Object.assign(next,movePosition(next,{...input,ms},next.interior));credit-=ms;}
+ for(const input of inputs){const ms=Math.min(input.ms,credit);Object.assign(next,movePosition(next,{...input,ms},next.interior,next.rustyWoodsEnabled));credit-=ms;}
  next.motionCredit=Math.min(250,credit);next.motionBatch=batch;return next;
 }
 
@@ -234,7 +234,7 @@ export const DUNGEON_ROOMS=[{x:60,y:100,w:390,h:780},{x:580,y:100,w:300,h:310},{
 export const DUNGEON_SPAWNS=[{x:280,y:330},{x:330,y:650},{x:730,y:205},{x:740,y:735},{x:1120,y:740},{x:1210,y:590},{x:1200,y:245}];
 export function dungeonWalkable(x:number,y:number){return [[x-10,y],[x+10,y],[x,y-10],[x,y+10]].every(([px,py])=>DUNGEON_ROOMS.some(r=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h))}
 export function newDungeonMonsters():Monster[]{return DUNGEON_SPAWNS.map((p,i)=>({...p,id:100+i,kind:i===6?'boss':i%3===0?'slime':i%3===1?'rat':'bug',hp:i===6?450:i%3===2?100:i%3===1?40:60,respawn:0}))}
-export function activeMonsters(s:GameState){return s.interior===11?s.dungeon?.monsters??[]:s.interior===undefined?s.monsters:[]}
+export function activeMonsters(s:GameState){return s.interior===11?s.dungeon?.monsters??[]:s.interior===undefined?s.monsters.filter(m=>s.rustyWoodsEnabled!==false||!isWoodsMonster(m.id)):[]}
 export function sceneExit(interior?:number){return interior===11?DUNGEON.exit:ROOM.exit}
 
 // Cached navigation grids use the same solid geometry as movement and combat.
@@ -330,3 +330,14 @@ export function assistAim(s:GameState,dx:number,dy:number,kind=weaponKind(s)){
  const score=(m:Monster)=>{const x=m.x-s.x,y=m.y-s.y,d=Math.hypot(x,y);const alignment=d>0?(x*dx+y*dy)/d:1;return d/WEAPONS[kind].range+2*(1-alignment);};
  candidates.sort((a,b)=>score(a)-score(b)||a.id-b.id);const target=candidates[0];if(!target)return {dx,dy};const distance=Math.hypot(target.x-s.x,target.y-s.y);return {dx:distance?(target.x-s.x)/distance:dx,dy:distance?(target.y-s.y)/distance:dy,target:target.id};
 }
+
+// Server-owned region availability; never derived from movement/action payloads.
+export function applyWoodsAvailability(s:GameState,enabled:boolean){
+ const next=structuredClone(s);next.rustyWoodsEnabled=enabled;
+ if(!enabled&&next.interior===undefined&&next.x>2320){
+  Object.assign(next,WORLD.spawn);delete next.strike;delete next.dodgeUntil;
+  next.motionCredit=0;delete next.motionBatch;
+ }
+ return next;
+}
+export function playableWorld(enabled=true){return enabled?WORLD:{...WORLD,width:2400};}

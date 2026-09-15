@@ -2,8 +2,8 @@ import {drawWoodsGround} from './woods.ts';
 import {WORLD} from '../../packages/game-core/world.ts';
 // Roads are one connected network on a single low-contrast asphalt material.
 export const ROADS=[[[520,760],[2260,760]],[[520,1150],[1600,1150]],[[520,1510],[2240,1510]],[[520,90],[520,1560]],[[1600,90],[1600,1560]]] as const;
-export function makeTerrain(image:HTMLImageElement){
- const ground=document.createElement('canvas');ground.width=WORLD.width;ground.height=WORLD.height;
+export function makeTerrain(image:HTMLImageElement,rustyWoodsEnabled=true){
+ const ground=document.createElement('canvas');ground.width=rustyWoodsEnabled?WORLD.width:2400;ground.height=WORLD.height;
  const g=ground.getContext('2d')!;g.imageSmoothingEnabled=false;g.fillStyle='#283239';g.fillRect(0,0,ground.width,ground.height);
  // Mirroring a clean interior crop makes all four tile boundaries meet exactly.
  const tile=document.createElement('canvas');tile.width=128;tile.height=128;const t=tile.getContext('2d')!;
@@ -23,6 +23,6 @@ export function makeTerrain(image:HTMLImageElement){
  // Perimeter fences are rendered as sprites; no road markings around the forest.
  for(const side of [0,1]){const x=side?WORLD.width:0,fade=g.createLinearGradient(x,0,side?x-85:85,0);fade.addColorStop(0,'#050d13cc');fade.addColorStop(1,'#050d1300');g.fillStyle=fade;g.fillRect(side?WORLD.width-85:0,0,85,WORLD.height);}
  g.font='bold 13px monospace';g.textAlign='center';g.fillStyle='#a8b7af';g.fillText('TOWN SQUARE',1070,1100);g.fillText('WORKSHOPS & MARKET',1070,1615);g.fillText('EAST CHECKPOINT',1710,970);g.textAlign='left';
- drawWoodsGround(g);
+ if(rustyWoodsEnabled)drawWoodsGround(g);
  return ground;
 }
