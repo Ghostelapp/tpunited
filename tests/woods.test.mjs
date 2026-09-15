@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';
 import {WOODS_ENCOUNTER_DETAILS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,seedWoods,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile} from '../packages/game-core/woods.ts';
-import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame} from '../components/tpu/woods-monsters.ts';
+import {woodsAttackVariant,woodsBossPhase,woodsSkillSpec} from '../packages/game-core/woods-combat.ts';
+import {WOODS_MONSTER_ATLAS,woodsMonsterAtlasFrame,woodsMonsterPoseFrame} from '../components/tpu/woods-monsters.ts';
 import {stepWorld} from '../packages/realtime/world.ts';
 
 test('forest joins the eastern road and tree trunks block movement',()=>{
@@ -47,14 +48,17 @@ test('every forest encounter uses a different real monster atlas family',()=>{
  assert.equal(new Set(WOODS_ENCOUNTER_DETAILS.map(e=>e.marker)).size,7);
 });
 
-test('forest atlas idle and movement crops stay inside sheet 9 and exclude caption rows',()=>{
+test('forest atlas idle movement attack hurt and death crops stay inside sheet 9',()=>{
  for(const spawn of WOODS_SPAWNS){
   const profile=woodsMonsterProfile(spawn.id),entry=WOODS_MONSTER_ATLAS[profile.atlasMonster];
-  const frames=[entry.idle,...entry.move,woodsMonsterAtlasFrame(spawn.id,false,0),woodsMonsterAtlasFrame(spawn.id,true,0)].filter(Boolean);
+  const frames=[entry.idle,...entry.move,...entry.attack,entry.hurt,entry.death,
+   woodsMonsterAtlasFrame(spawn.id,false,0),woodsMonsterAtlasFrame(spawn.id,true,0),
+   woodsMonsterPoseFrame(spawn.id,'attack',0,0),woodsMonsterPoseFrame(spawn.id,'hurt'),woodsMonsterPoseFrame(spawn.id,'death')].filter(Boolean);
   for(const [sx,sy,sw,sh] of frames){
    assert.ok(sx>=0&&sy>=0&&sw>0&&sh>0);
    assert.ok(sx+sw<=1254&&sy+sh<=1254,`${profile.name} crop escaped sheet 9`);
   }
+  assert.ok(entry.attack.length>=1,`${profile.name} has no authored attack pose`);
  }
 });
 
@@ -66,6 +70,59 @@ test('forest species expose tuned salvage bonuses',()=>{
  assert.deepEqual(woodsKillReward(25),{scrap:4,circuits:2,xp:6,label:'Live cable'});
  assert.deepEqual(woodsKillReward(26),{scrap:30,circuits:2,xp:25,label:'Ironroot core'});
  assert.equal(woodsKillReward(999),undefined);
+});
+
+test('normal forest monsters have distinct server-authoritative skills and engagement styles',()=>{
+ const specs=WOODS_SPAWNS.slice(0,6).map(m=>woodsSkillSpec(m.id));
+ assert.ok(specs.every(Boolean));
+ assert.equal(new Set(specs.map(s=>s.skill)).size,6);
+ assert.equal(new Set(specs.map(s=>s.label)).size,6);
+ assert.equal(woodsSkillSpec(22).moveSpeed,108);
+ assert.equal(woodsSkillSpec(24).stopDistance,152);
+ assert.equal(woodsSkillSpec(25).telegraph,'ring');
+ assert.equal(woodsAttackVariant(20,'eel-shock'),1);
+ assert.equal(woodsAttackVariant(26,'root-burst'),1);
+});
+
+test('Ironroot Golem has three increasingly aggressive combat phases',()=>{
+ const p1=woodsBossPhase(700),p2=woodsBossPhase(400),p3=woodsBossPhase(120);
+ assert.deepEqual([p1.phase,p2.phase,p3.phase],[1,2,3]);
+ assert.ok(p2.speedMultiplier>p1.speedMultiplier);
+ assert.ok(p3.speedMultiplier>p2.speedMultiplier);
+ assert.ok(p3.slamRadius>p1.slamRadius);
+ assert.ok(p3.slamDamage>p1.slamDamage);
+ assert.ok(p2.rootRadius>0&&p3.rootRadius>p2.rootRadius);
+ assert.ok(p3.cooldown<p1.cooldown);
+});
+
+test('forest skill windups are scheduled by the authoritative simulation',()=>{
+ const now=100000,spawn=WOODS_SPAWNS[0];
+ const s={...initialState(),x:spawn.x+100,y:spawn.y,monsters:[{...spawn,lastSkill:0,mode:'chase'}]};
+ const n=advance(s,{type:'tick'},0,now);
+ const eel=n.monsters.find(m=>m.id===20);
+ assert.equal(eel.windup?.skill,'eel-shock');
+ assert.equal(eel.windup?.at,now+woodsSkillSpec(20).windup);
+});
+
+test('targeted forest skill deals damage only after its telegraph and dodge avoids it',()=>{
+ const now=100000,spawn=WOODS_SPAWNS[3],spec=woodsSkillSpec(23),target={x:spawn.x+35,y:spawn.y};
+ const monster={...spawn,windup:{skill:spec.skill,at:now,...target},mode:'chase'};
+ const base={...initialState(),...target,hp:100,monsters:[monster]};
+ const hit=advance(structuredClone(base),{type:'tick'},0,now);
+ assert.ok(hit.hp<100);assert.ok(hit.events.some(e=>e.includes('ASH SPIT')));
+ const dodged=advance({...structuredClone(base),dodgeUntil:now+100},{type:'tick'},0,now);
+ assert.equal(dodged.hp,100);
+});
+
+test('phase two root burst and phase three enlarged slam use boss-specific damage zones',()=>{
+ const now=100000,boss=WOODS_SPAWNS[6];
+ const rootTarget={x:boss.x+70,y:boss.y};
+ const rootState={...initialState(),...rootTarget,hp:100,monsters:[{...boss,hp:400,mode:'chase',windup:{skill:'root-burst',at:now,...rootTarget}}]};
+ const rooted=advance(rootState,{type:'tick'},0,now);
+ assert.ok(rooted.hp<100);assert.ok(rooted.events.some(e=>e.includes('roots erupted')));
+ const slamState={...initialState(),x:boss.x+165,y:boss.y,hp:100,monsters:[{...boss,hp:120,mode:'chase',slamAt:now,lastSkill:now-10000}]};
+ const slammed=advance(slamState,{type:'tick'},0,now);
+ assert.ok(slammed.hp<100);assert.ok(slammed.events.some(e=>e.includes('phase 3')));
 });
 
 test('world migration adds forest enemies once and preserves existing damage and respawn',()=>{

@@ -1,4 +1,5 @@
 import {WOODS_SPAWNS,WOODS_TREES,isWoodsMonster,woodsMonsterHealth,woodsKillReward} from './woods.ts';
+import {woodsBossPhase,woodsSkillSpec,type WoodsSkill} from './woods-combat.ts';
 export const REGIONS=[
 {name:'Trash Town',level:'1–5',description:'A home built from everything the old world left behind. Meet the locals, earn your first scrap, and find your feet.',resources:'Scrap, circuits',faction:'The Salvagers'},
 {name:'Rusty Woods',level:'5–10',description:'Twisted roots wrap around forgotten machines. The forest has learned to fight back.',resources:'Timber, wire',faction:'Rustborn'},
@@ -16,7 +17,7 @@ export function blocked(x:number,y:number){return x<WORLD_LIMITS.left||y<WORLD_L
 export const NPCS=[{id:'scrappy',name:'Scrappy',x:1150,y:710,sx:195,sy:222,sw:89,sh:105,text:'Welcome to Trash Town. Those toxic slimes are eating our cables. Clear three out and I’ll make it worth your while.'},{id:'patch',name:'Dr. Patch',x:825,y:705,sx:205,sy:398,sw:76,sh:120,text:'Stay in one piece out there. I can patch you up for 15 scrap.'},{id:'wrench',name:'Wrench',x:1480,y:705,sx:825,sy:222,sw:89,sh:105,text:'Two circuits and 20 scrap. That’s all I need to make you a fresh medkit.'},{id:'merchant',name:'Bolt',x:1480,y:1095,sx:201,sy:590,sw:81,sh:112,text:'Welcome to the General Store. Medkits cost 30 scrap. I buy circuits for 4 scrap each.'}];
 NPCS.push({id:'ranger',name:'Moss · Forest Ranger',x:2470,y:760,sx:195,sy:222,sw:89,sh:105,text:'The Ironroot Golem has awakened. Help me reclaim the forest. [E] Accept or turn in Roots of Rust.'});
 export const parcels=Array.from({length:100},(_,i)=>({id:i+1,regionId:0,x:60+(i%10)*40,y:80+Math.floor(i/10)*40,width:32,height:32,rarity:i%17===0?'EPIC':i%5===0?'RARE':'COMMON',buildingSlots:i%17===0?6:i%5===0?4:2,status:i>=80?'SYSTEM':i>=70?'RESERVED':'UNRELEASED'}));
-export type Monster={windup?:{at:number;x:number;y:number};lastSkill?:number;navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
+export type Monster={windup?:{at:number;x:number;y:number;skill?:WoodsSkill};lastSkill?:number;skillCycle?:number;navPath?:{x:number;y:number}[];navAt?:number;navGoal?:{x:number;y:number};mode?:'patrol'|'chase'|'return';waypoint?:number;slamAt?:number;lastSlam?:number;kind?:'slime'|'rat'|'bug'|'boss';id:number;x:number;y:number;hp:number;respawn:number};
 export type NftGear={id:string;tokenId:number;name:string;image:string;slot:GearSlot;rarity:"common"|"uncommon"|"rare"|"epic"|"legendary"|"mythic";damage:number;armor:number;minLevel:number};
 export type GameState={woodsQuest?:'active'|'complete';woodsKills?:number;woodsBoss?:boolean;stamina?:number;energy?:number;dodgeUntil?:number;lastDodge?:number;strike?:{at:number;dx:number;dy:number;kind:WeaponKind;damage:number;target?:number};hits?:{x:number;y:number;amount:number}[];legacy?:LegacyProgress;bandages?:number;bandage?:{until:number;remaining:number;credit:number};healing?:{startedAt:number;readyAt:number};healCooldownUntil?:number;restSince?:number;restCredit?:number;nftGear?:NftGear[];hitFeedback?:{x:number;y:number;amount:number};townLayout?:number;loot?:LootItem[];equipment?:Partial<Record<GearSlot,string>>;dungeon?:{monsters:Monster[];cleared:boolean;run:number;hits?:number;deaths?:number};interior?:number;daily?:DailyProgress;motionBatch?:string;motionCredit?:number;weaponLevel?:number;salvageQuest?:'available'|'active'|'complete';bountyQuest?:'available'|'active'|'complete';bountyKills?:number;x:number;y:number;hp:number;xp:number;scrap:number;circuits:number;medkits:number;kills:number;quest:'available'|'active'|'complete';questKills:number;monsters:Monster[];lastAttack:number;lastDamage:number;events:string[];buildings:{id:string;parcel:number;x:number;y:number;rotation:number;type:string}[]};
 export function initialState():GameState{return {...WORLD.spawn,townLayout:2,weaponLevel:0,salvageQuest:'available',bountyQuest:'available',bountyKills:0,hp:100,xp:0,scrap:0,circuits:0,medkits:2,kills:0,quest:'available',questKills:0,lastAttack:0,lastDamage:0,events:[],buildings:[],monsters:Array.from({length:8},(_,i)=>({id:i,kind:(i<4?'slime':i<6?'rat':'bug') as 'slime'|'rat'|'bug',x:1930+(i%3)*130,y:480+Math.floor(i/3)*230,hp:i<4?60:i<6?40:100,respawn:0}))}}
@@ -54,7 +55,7 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  for(const m of activeMonsters(next)){
  if(options.monsterIds&&!options.monsterIds.has(m.id))continue;
  m.kind??=m.id<4?'slime':m.id<6?'rat':'bug';const home=monsterHome(m.id);
- if(m.hp<=0){if(next.interior!==11&&now>=m.respawn){m.hp=isWoodsMonster(m.id)?woodsMonsterHealth(m.id):m.kind==='bug'?100:m.kind==='rat'?40:60;Object.assign(m,home);m.mode='patrol';}continue;}
+ if(m.hp<=0){if(next.interior!==11&&now>=m.respawn){m.hp=isWoodsMonster(m.id)?woodsMonsterHealth(m.id):m.kind==='bug'?100:m.kind==='rat'?40:60;Object.assign(m,home);m.mode='patrol';delete m.windup;delete m.slamAt;delete m.navPath;delete m.navGoal;m.lastSkill=now;m.lastSlam=now;m.skillCycle=0;}continue;}
  const toPlayer=next.interior===undefined&&next.x<1740?Infinity:Math.hypot(m.x-next.x,m.y-next.y),fromHome=Math.hypot(m.x-home.x,m.y-home.y);
  if(fromHome>460||(next.interior===undefined&&m.x<1740))m.mode='return';
  if(m.mode==='return'&&fromHome<18)m.mode='patrol';
@@ -63,22 +64,30 @@ function advanceWorld(s:GameState,a:Intent,elapsed:number,now:number,options:Adv
  if(m.mode==='chase')target=next;
  else if(m.mode==='return')target=home;
  else {const phase=(m.waypoint??m.id)%4,angle=phase*Math.PI/2+m.id*.73;target={x:home.x+Math.cos(angle)*65,y:home.y+Math.sin(angle)*65};if(Math.hypot(target.x-m.x,target.y-m.y)<12)m.waypoint=(m.waypoint??m.id)+1;}
- const speed=(m.kind==='boss'?38:m.kind==='rat'?90:m.kind==='bug'?48:52)*(m.mode==='patrol'?.45:1);
+ const forestSkill=isWoodsMonster(m.id)&&m.kind!=='boss'?woodsSkillSpec(m.id):undefined;
+ const bossPhase=isWoodsMonster(m.id)&&m.kind==='boss'?woodsBossPhase(m.hp):undefined;
+ const speed=(bossPhase?38*bossPhase.speedMultiplier:forestSkill?.moveSpeed??(m.kind==='boss'?38:m.kind==='rat'?90:m.kind==='bug'?48:52))*(m.mode==='patrol'?.45:1);
  if(m.kind==='boss'){
- if(m.slamAt&&now>=m.slamAt){if(now>=(next.dodgeUntil??0)&&Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.lastDamage=now;next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
- else if(m.mode==='chase'&&!m.slamAt&&now-(m.lastSlam??0)>4500&&toPlayer<180)m.slamAt=now+1100;
+  if(bossPhase){
+   if(m.slamAt&&now>=m.slamAt){if(now>=(next.dodgeUntil??0)&&Math.hypot(m.x-next.x,m.y-next.y)<bossPhase.slamRadius&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,bossPhase.slamDamage-gearStats(next).armor);next.lastDamage=now;next.events.push(`Ironroot phase ${bossPhase.phase} · ground slam!`);}m.slamAt=undefined;m.lastSlam=now;m.lastSkill=now;}
+   else if(m.windup?.skill==='root-burst'&&now>=m.windup.at){const root=m.windup;delete m.windup;m.lastSkill=now;if(now>=(next.dodgeUntil??0)&&Math.hypot(next.x-root.x,next.y-root.y)<bossPhase.rootRadius&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,bossPhase.rootDamage-gearStats(next).armor);next.lastDamage=now;next.events.push('Ironroot roots erupted beneath you!');}}
+   else if(m.mode==='chase'&&!m.slamAt&&!m.windup&&now-(m.lastSkill??m.lastSlam??0)>bossPhase.cooldown&&toPlayer<Math.max(190,bossPhase.rootRange)){const useRoot=bossPhase.phase>1&&((m.skillCycle??0)%2===1)&&toPlayer<bossPhase.rootRange;m.skillCycle=(m.skillCycle??0)+1;if(useRoot)m.windup={skill:'root-burst',at:now+bossPhase.rootWindup,x:next.x,y:next.y};else if(toPlayer<210)m.slamAt=now+bossPhase.slamWindup;}
+  }else{
+   if(m.slamAt&&now>=m.slamAt){if(now>=(next.dodgeUntil??0)&&Math.hypot(m.x-next.x,m.y-next.y)<145&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(2,28-gearStats(next).armor);next.lastDamage=now;next.events.push('Ground slam! Move out of the warning ring.');}m.slamAt=undefined;m.lastSlam=now;}
+   else if(m.mode==='chase'&&!m.slamAt&&now-(m.lastSlam??0)>4500&&toPlayer<180)m.slamAt=now+1100;
+  }
  }
  if(m.kind!=='boss'){
- if(m.windup&&now>=m.windup.at){const target=m.windup;m.lastSkill=now;delete m.windup;
- if(m.kind==='rat')moveMonster(m,target,480,.25,activeMonsters(next),0,next.interior);
- const center=m.kind==='slime'?target:m,radius=m.kind==='slime'?65:m.kind==='bug'?95:60;
- if(now>=(next.dodgeUntil??0)&&Math.hypot(next.x-center.x,next.y-center.y)<radius&&clearMonsterPath(m,next,next.interior)){
- next.hp-=Math.max(1,(m.kind==='bug'?20:m.kind==='rat'?10:12)-gearStats(next).armor);next.lastDamage=now;
- }
- }else if(!m.windup&&m.mode==='chase'&&now-(m.lastSkill??0)>1800&&toPlayer<(m.kind==='slime'?220:m.kind==='rat'?150:115)&&clearMonsterPath(m,next,next.interior))m.windup={at:now+(m.kind==='bug'?950:m.kind==='slime'?800:650),x:next.x,y:next.y};
+  if(forestSkill){
+   if(m.windup&&now>=m.windup.at){const target=m.windup;m.lastSkill=now;delete m.windup;if(forestSkill.origin==='impact'&&forestSkill.dashMs)moveMonster(m,target,forestSkill.dashMs,forestSkill.dashScale??.3,activeMonsters(next),0,next.interior);const center=forestSkill.origin==='target'?target:forestSkill.origin==='impact'?m:m;if(now>=(next.dodgeUntil??0)&&Math.hypot(next.x-center.x,next.y-center.y)<forestSkill.radius&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(1,forestSkill.damage-gearStats(next).armor);next.lastDamage=now;next.events.push(`${forestSkill.label}! Dodge the telegraph.`);}}
+   else if(!m.windup&&m.mode==='chase'&&now-(m.lastSkill??0)>forestSkill.cooldown&&toPlayer<forestSkill.range&&clearMonsterPath(m,next,next.interior))m.windup={skill:forestSkill.skill,at:now+forestSkill.windup,x:next.x,y:next.y};
+  }else{
+   if(m.windup&&now>=m.windup.at){const target=m.windup;m.lastSkill=now;delete m.windup;if(m.kind==='rat')moveMonster(m,target,480,.25,activeMonsters(next),0,next.interior);const center=m.kind==='slime'?target:m,radius=m.kind==='slime'?65:m.kind==='bug'?95:60;if(now>=(next.dodgeUntil??0)&&Math.hypot(next.x-center.x,next.y-center.y)<radius&&clearMonsterPath(m,next,next.interior)){next.hp-=Math.max(1,(m.kind==='bug'?20:m.kind==='rat'?10:12)-gearStats(next).armor);next.lastDamage=now;}}
+   else if(!m.windup&&m.mode==='chase'&&now-(m.lastSkill??0)>1800&&toPlayer<(m.kind==='slime'?220:m.kind==='rat'?150:115)&&clearMonsterPath(m,next,next.interior))m.windup={at:now+(m.kind==='bug'?950:m.kind==='slime'?800:650),x:next.x,y:next.y};
+  }
  }
  if(!m.slamAt&&!m.windup){
- let destination=target,stop=m.mode==='chase'?38:4;
+ let destination=target,stop=m.mode==='chase'?(forestSkill?.stopDistance??38):4;
  if(!clearMonsterPath(m,target,next.interior)){
  if(!m.navPath?.length||now-(m.navAt??0)>1000||!m.navGoal||Math.hypot(target.x-m.navGoal.x,target.y-m.navGoal.y)>64){m.navPath=findMonsterPath(m,target,next.interior);m.navAt=now;m.navGoal={x:target.x,y:target.y};}
  while(m.navPath?.length&&Math.hypot(m.navPath[0].x-m.x,m.navPath[0].y-m.y)<9)m.navPath.shift();

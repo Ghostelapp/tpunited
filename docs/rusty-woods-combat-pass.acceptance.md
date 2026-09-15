@@ -1,0 +1,22 @@
+# Rusty Woods Combat Pass — Acceptance
+
+- [x] Sap Eel uses a delayed target-circle Sap Shock.
+- [x] Mire Hound telegraphs and executes an impact charge.
+- [x] Bramble Bat is the fastest forest hunter and uses a dive attack.
+- [x] Ash Roach keeps medium range and uses a delayed spit zone.
+- [x] Rust Wasp keeps long range and uses a narrow ranged burst.
+- [x] Cable Serpent controls space with a large self-centered storm ring.
+- [x] Ironroot Golem has three deterministic health phases.
+- [x] Phase 2+ alternates targeted Root Burst with ground slam.
+- [x] Phase 3 increases speed, slam radius/damage and reduces cooldown.
+- [x] Dodge invulnerability is respected by forest skills.
+- [x] Forest attacks remain authoritative in shared-world simulation.
+- [x] Attack, hurt and death poses use authored sheet-9 art.
+- [x] Forest skill telegraphs use per-species geometry and colors.
+- [x] Forest death pose fades briefly instead of disappearing instantly.
+- [x] Respawn clears stale windup/slam/navigation/skill-cycle state.
+- [x] Stable shared-world monster IDs 20–26 are unchanged.
+- [x] No D1 migration or contract deployment is required.
+- [ ] Rendered desktop combat playtest after deployment.
+- [ ] Rendered mobile/touch combat playtest after deployment.
+- [ ] Live two-device shared-world combat acceptance after deployment.
