@@ -294,3 +294,28 @@ test('returning players escape newly placed props without losing progress',async
  const next=migrateTown(s);assert.equal(blocked(next.x,next.y),false);assert.equal(next.scrap,555);assert.equal(next.woodsQuest,'complete');
  assert.deepEqual(migrateTown(next),next);
 });
+
+test('east town fence blocks crossing except at the visible gate',async()=>{
+ const {migrateTown}=await import('../packages/game-core/world.ts');
+ for(const y of [200,500,1100,1450]){
+  assert.equal(blocked(2365,y),true);
+  const left=movePosition({x:2320,y},{dx:1,dy:0,ms:1000});assert.ok(left.x<2341);
+  const right=movePosition({x:2410,y},{dx:-1,dy:0,ms:1000});assert.ok(right.x>2389);
+ }
+ assert.equal(clearMonsterPath({x:2300,y:760},{x:2700,y:760}),true);
+ const s=initialState();s.x=2365;s.y=1400;s.woodsLayout=2;s.scrap=987;
+ const next=migrateTown(s);assert.equal(blocked(next.x,next.y),false);assert.equal(next.scrap,987);assert.equal(next.woodsLayout,3);
+});
+
+test('outdoor camera never exposes space beyond the terrain, including oversized viewports',async()=>{
+ const {outdoorZoom,clampOutdoorCamera}=await import('../components/tpu/world-presentation.ts');
+ const world={width:6200,height:1700};
+ for(const [w,h] of [[1920,1080],[390,844],[900,2400],[8000,2200]]){
+  const zoom=outdoorZoom(w,h,world);
+  for(const x of [0,59,3100,6141,7000])for(const y of [0,86,850,1606,2000]){
+   const camera=clampOutdoorCamera({x,y},w,h,zoom,world),halfW=w/(2*zoom),halfH=h/(2*zoom);
+   assert.ok(camera.x-halfW>=-1e-6);assert.ok(camera.x+halfW<=world.width+1e-6);
+   assert.ok(camera.y-halfH>=-1e-6);assert.ok(camera.y+halfH<=world.height+1e-6);
+  }
+ }
+});

@@ -1,3 +1,4 @@
+import {townWallBlocked} from './town-boundary.ts';
 import {WOODS_WORLD_WIDTH,WOODS_SOLIDS} from './woods-layout.ts';
 import {WOODS_ALL_SPAWNS,WOODS_TREES,isWoodsMonster,isWoodsElite,woodsMonsterHealth,woodsKillReward,woodsRespawnDelay,woodsEvent} from './woods.ts';
 import {woodsBossPhase,woodsSkillSpec,type WoodsSkill} from './woods-combat.ts';
@@ -14,7 +15,7 @@ export const REGIONS=[
 export const WORLD={width:WOODS_WORLD_WIDTH,height:1700,spawn:{x:1150,y:880}};
 export const BUILDINGS=[{x:940,y:390,w:300,h:260,sx:0,sy:0,sw:365,sh:340,name:'City Hall'},{x:1280,y:400,w:250,h:250,sx:368,sy:30,sw:294,sh:310,name:'Workshop'},{x:1280,y:800,w:250,h:240,sx:980,sy:57,sw:274,sh:283,name:'General Store'},{x:600,y:800,w:260,h:240,sx:0,sy:375,sw:285,sh:264,name:'The Trashy Tavern'},{x:600,y:400,w:260,h:250,sx:284,sy:377,sw:269,sh:261,name:'Clinic'},{x:940,y:1170,w:300,h:230,sx:559,sy:667,sw:341,sh:220,name:'Market Arcade'},{x:1280,y:1170,w:250,h:230,sx:666,sy:72,sw:315,sh:268,name:'Mechanic Garage'},{x:600,y:90,w:260,h:240,sx:1040,sy:371,sw:214,sh:267,name:'Apartments'},{x:600,y:1170,w:260,h:230,sx:0,sy:666,sw:232,sh:221,name:'Tech Exchange'},{x:1900,y:1330,w:280,h:230,sx:235,sy:678,sw:320,sh:209,name:'Salvage Depot'},{x:940,y:90,w:270,h:240,sx:560,sy:369,sw:268,sh:268,name:'Old Bank'}];
 export const WORLD_LIMITS={left:59,right:WORLD.width-59,top:86,bottom:WORLD.height-94};
-export function blocked(x:number,y:number){return x<WORLD_LIMITS.left||y<WORLD_LIMITS.top||x>WORLD_LIMITS.right||y>WORLD_LIMITS.bottom||WOODS_SOLIDS.some(p=>Math.abs(x-p.x)<p.w/2+12&&Math.abs(y-p.y)<p.h/2+12)||WOODS_TREES.some(t=>Math.hypot(x-t.x,y-t.y)<22)||BUILDINGS.some(b=>x>b.x-12&&x<b.x+b.w+12&&y>b.y+b.h-65&&y<b.y+b.h+8)}
+export function blocked(x:number,y:number){return x<WORLD_LIMITS.left||y<WORLD_LIMITS.top||x>WORLD_LIMITS.right||y>WORLD_LIMITS.bottom||townWallBlocked(x,y)||WOODS_SOLIDS.some(p=>Math.abs(x-p.x)<p.w/2+12&&Math.abs(y-p.y)<p.h/2+12)||WOODS_TREES.some(t=>Math.hypot(x-t.x,y-t.y)<22)||BUILDINGS.some(b=>x>b.x-12&&x<b.x+b.w+12&&y>b.y+b.h-65&&y<b.y+b.h+8)}
 export const NPCS=[{id:'scrappy',name:'Scrappy',x:1150,y:710,sx:195,sy:222,sw:89,sh:105,text:'Welcome to Trash Town. Those toxic slimes are eating our cables. Clear three out and I’ll make it worth your while.'},{id:'patch',name:'Dr. Patch',x:825,y:705,sx:205,sy:398,sw:76,sh:120,text:'Stay in one piece out there. I can patch you up for 15 scrap.'},{id:'wrench',name:'Wrench',x:1480,y:705,sx:825,sy:222,sw:89,sh:105,text:'Two circuits and 20 scrap. That’s all I need to make you a fresh medkit.'},{id:'merchant',name:'Bolt',x:1480,y:1095,sx:201,sy:590,sw:81,sh:112,text:'Welcome to the General Store. Medkits cost 30 scrap. I buy circuits for 4 scrap each.'}];
 NPCS.push({id:'ranger',name:'Moss · Forest Ranger',x:2470,y:760,sx:195,sy:222,sw:89,sh:105,text:'The Ironroot Golem has awakened. Help me reclaim the forest. [E] Accept or turn in Roots of Rust.'});
 export const parcels=Array.from({length:100},(_,i)=>({id:i+1,regionId:0,x:60+(i%10)*40,y:80+Math.floor(i/10)*40,width:32,height:32,rarity:i%17===0?'EPIC':i%5===0?'RARE':'COMMON',buildingSlots:i%17===0?6:i%5===0?4:2,status:i>=80?'SYSTEM':i>=70?'RESERVED':'UNRELEASED'}));
@@ -254,7 +255,7 @@ export function findMonsterPath(start:{x:number;y:number},goal:{x:number;y:numbe
 }
 
 export function migrateTown(s:GameState):GameState{const next=structuredClone(s);if((next.townLayout??0)<2){next.townLayout=2;if(next.interior===undefined)Object.assign(next,WORLD.spawn);for(const m of next.monsters){Object.assign(m,monsterHome(m.id));m.navPath=[];m.mode='patrol';}}if(next.interior===undefined){next.x=Math.max(WORLD_LIMITS.left,Math.min(WORLD_LIMITS.right,next.x));next.y=Math.max(WORLD_LIMITS.top,Math.min(WORLD_LIMITS.bottom,next.y));}
- if(next.interior===undefined&&next.woodsLayout!==2){
+ if(next.interior===undefined&&next.woodsLayout!==3){
   if(next.x>=2300&&blocked(next.x,next.y)){
    let safe=false;
    for(let radius=24;radius<=240&&!safe;radius+=24)for(let i=0;i<16;i++){
@@ -263,7 +264,7 @@ export function migrateTown(s:GameState):GameState{const next=structuredClone(s)
    }
    if(!safe){next.x=2470;next.y=760;}
   }
-  next.woodsLayout=2;
+  next.woodsLayout=3;
  }
  return next}
 
