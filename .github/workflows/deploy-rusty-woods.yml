@@ -1,0 +1,67 @@
+name: Deploy Rusty Woods
+on:
+  push:
+    branches: [ops/deploy-rusty-woods]
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d32df54a77da91a82956ad8ea8ec90f91920eb35
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Verify Cloudflare credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CF_TOKEN:-}" ]; then
+            echo "CLOUDFLARE_API_TOKEN is not configured in GitHub Actions secrets."
+            exit 2
+          fi
+          export CLOUDFLARE_API_TOKEN="$CF_TOKEN"
+          if [ -n "${CF_ACCOUNT:-}" ]; then export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT"; fi
+          npx wrangler whoami
+      - name: Install and verify reviewed revision
+        run: |
+          npm ci
+          npm run typecheck
+          npm run game:test
+          npm run realtime:test
+          npm run art:test
+          npm run build
+          npm run realtime:build
+          npm run realtime:integration:app
+      - name: Prepare Cloudflare testnet config
+        run: node scripts/prepare-cloudflare-testnet.mjs
+      - name: Deploy realtime Worker then application Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$CF_TOKEN"
+          if [ -n "${CF_ACCOUNT:-}" ]; then export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT"; fi
+          echo "Deploying reviewed Rusty Woods revision d32df54a77da91a82956ad8ea8ec90f91920eb35"
+          npx wrangler deploy --config wrangler.realtime.json
+          npx wrangler deploy --config dist/server/wrangler.production.json
+      - name: Public smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in https://tpunited.xyz https://game.tpunited.xyz; do
+            echo "Checking $url"
+            body="$(curl -fLsS --retry 8 --retry-delay 3 --max-time 30 "$url")"
+            test -n "$body"
+            echo "$body" | grep -Eqi 'trash panda|tpunited|game' || {
+              echo "Unexpected response body from $url"
+              exit 3
+            }
+          done
+          echo "Public domains responded successfully after deployment."
