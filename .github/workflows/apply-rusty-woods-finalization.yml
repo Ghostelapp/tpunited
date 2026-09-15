@@ -1,0 +1,142 @@
+name: Apply Rusty Woods finalization
+on:
+  push:
+    branches: [feat/rusty-woods-finalization]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/rusty-woods-finalization
+      - name: Apply final forest polish
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p=Path(path); s=p.read_text()
+              n=s.count(old)
+              if n != 1:
+                  raise RuntimeError(f'{label}: expected 1 anchor, found {n}')
+              p.write_text(s.replace(old,new,1))
+
+          # Unique elite gear: named Rusty Woods rewards, still below epic boss gear.
+          replace_once('packages/game-core/world.ts',
+          " reinforced_vest:{name:'Scavenger Hood',slot:'armor',rarity:'rare',damage:0,armor:4},\n king_armor:{name:'King Gauntlets',slot:'armor',rarity:'epic',damage:0,armor:7}",
+          " reinforced_vest:{name:'Scavenger Hood',slot:'armor',rarity:'rare',damage:0,armor:4},\n whisper_mantle:{name:'Whisper Mantle',slot:'armor',rarity:'rare',damage:0,armor:6},\n hauler_arc_blaster:{name:'Hauler Arc Blaster',slot:'weapon',rarity:'rare',damage:16,armor:0},\n king_armor:{name:'King Gauntlets',slot:'armor',rarity:'epic',damage:0,armor:7}",
+          'elite gear definitions')
+          replace_once('packages/game-core/world.ts',
+          "if(isWoodsElite(hit.id))awardGuaranteedLoot(next,hit.id===27?'reinforced_vest':'neon_blade',now,`elite-${hit.id}`);else awardLoot(next,hit,now);",
+          "if(isWoodsElite(hit.id))awardGuaranteedLoot(next,hit.id===27?'whisper_mantle':'hauler_arc_blaster',now,`elite-${hit.id}`);else awardLoot(next,hit,now);",
+          'elite guaranteed loot')
+
+          # A deliberate east-side handoff toward the next region.
+          replace_once('packages/game-core/woods.ts',
+          "export const WOODS_START=2400;",
+          "export const WOODS_START=2400;\nexport const WOODS_EXIT={x:3690,y:820,name:'Junkyard Valley Gate'} as const;",
+          'woods exit constant')
+          replace_once('packages/game-core/woods.ts',
+          " {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},\n] as const;",
+          " {id:'ironroot',name:'Ironroot Grove',x:3540,y:820,kind:'boss'},\n {id:'junkyard-gate',name:'Junkyard Valley Gate',x:WOODS_EXIT.x,y:WOODS_EXIT.y,kind:'gate'},\n] as const;",
+          'junkyard gate landmark')
+
+          replace_once('components/tpu/woods.ts',
+          "import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';",
+          "import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_EXIT,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';",
+          'woods render import')
+          replace_once('components/tpu/woods.ts',
+          " g.moveTo(2180,760);g.lineTo(2460,760);g.lineTo(2670,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.stroke();",
+          " g.moveTo(2180,760);g.lineTo(2460,760);g.lineTo(2670,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();",
+          'outer forest road')
+          replace_once('components/tpu/woods.ts',
+          " g.moveTo(2380,760);g.lineTo(2660,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.stroke();",
+          " g.moveTo(2380,760);g.lineTo(2660,770);g.lineTo(2940,830);g.lineTo(3270,825);g.lineTo(3540,820);g.lineTo(WOODS_EXIT.x+35,WOODS_EXIT.y);g.stroke();",
+          'inner forest road')
+          replace_once('components/tpu/woods.ts',
+          " for(let i=0;i<8;i++){\n  const a=i*Math.PI/4+.18,x1=3540+Math.cos(a)*42,y1=820+Math.sin(a)*26,x2=3540+Math.cos(a)*142,y2=820+Math.sin(a)*112;\n  g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo((x1+x2)/2+Math.sin(a)*17,(y1+y2)/2-Math.cos(a)*12,x2,y2);g.stroke();\n }\n\n g.fillStyle='#c6d799';",
+          " for(let i=0;i<8;i++){\n  const a=i*Math.PI/4+.18,x1=3540+Math.cos(a)*42,y1=820+Math.sin(a)*26,x2=3540+Math.cos(a)*142,y2=820+Math.sin(a)*112;\n  g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo((x1+x2)/2+Math.sin(a)*17,(y1+y2)/2-Math.cos(a)*12,x2,y2);g.stroke();\n }\n\n // Expedition checkpoint gives the current map a deliberate eastern finish while\n // keeping the future Junkyard Valley route visually continuous.\n g.fillStyle='#443a2f';g.fillRect(WOODS_EXIT.x-45,WOODS_EXIT.y-92,12,82);g.fillRect(WOODS_EXIT.x+33,WOODS_EXIT.y-92,12,82);\n g.fillStyle='#756247';g.fillRect(WOODS_EXIT.x-49,WOODS_EXIT.y-98,98,12);\n g.fillStyle='#202a29';g.fillRect(WOODS_EXIT.x-58,WOODS_EXIT.y-132,116,28);g.strokeStyle='#aa9658';g.lineWidth=2;g.strokeRect(WOODS_EXIT.x-58,WOODS_EXIT.y-132,116,28);\n g.fillStyle='#e2cf86';g.font='bold 10px monospace';g.textAlign='center';g.fillText('JUNKYARD VALLEY →',WOODS_EXIT.x,WOODS_EXIT.y-114);g.textAlign='left';\n\n g.fillStyle='#c6d799';",
+          'expedition gate art')
+
+          # Forest-specific player guidance and minimap landmark readability.
+          replace_once('components/tpu/game.tsx',
+          "import {WOODS_EVENTS,WOODS_START,isWoodsMonster,isWoodsElite,woodsMonsterHealth,woodsMonsterName} from '@/packages/game-core/woods';",
+          "import {WOODS_EVENTS,WOODS_LANDMARKS,WOODS_START,isWoodsMonster,isWoodsElite,woodsMonsterHealth,woodsMonsterName} from '@/packages/game-core/woods';",
+          'game woods imports')
+          replace_once('components/tpu/game.tsx',
+          " const state=character?.state;\n const atWorkbench=!!state&&sceneNPCS(state.interior).some(n=>n.id==='wrench'&&Math.hypot(n.x-state.x,n.y-state.y)<140);",
+          " const state=character?.state;\n const inWoods=!!state&&state.interior===undefined&&state.x>=WOODS_START;\n const woodsRecovered=state?.daily?WOODS_EVENTS.filter(event=>state.daily?.caches.includes(event.claimKey)).length:0;\n const atWorkbench=!!state&&sceneNPCS(state.interior).some(n=>n.id==='wrench'&&Math.hypot(n.x-state.x,n.y-state.y)<140);",
+          'forest HUD derived state')
+          replace_once('components/tpu/game.tsx',
+          "<div className=\"eyebrow lime-text\"><UIIcon name=\"quests\" width={17}/> A CLEANER TOMORROW</div>",
+          "<div className=\"eyebrow lime-text\"><UIIcon name=\"quests\" width={17}/> {inWoods?'ROOTS OF RUST':'A CLEANER TOMORROW'}</div>",
+          'quest HUD title')
+          replace_once('components/tpu/game.tsx',
+          "<p>{state!.quest==='available'?'Talk to Scrappy in the town square.':state!.quest==='complete'?'Complete — Trash Town thanks you.':state!.questKills>=3?'Return to Scrappy for your reward.':`Clear toxic slimes: ${state!.questKills} / 3`}</p>",
+          "<p>{inWoods?(!state!.woodsQuest?'Find Moss at Trail Camp and press E to begin.':state!.woodsQuest==='complete'?'Rusty Woods secured — elite recoveries remain active.':(state!.woodsKills??0)>=6&&state!.woodsBoss?'Return to Moss for the region reward.':(state!.woodsKills??0)>=6?'Hunt the Ironroot Golem in the eastern grove.':`Forest creatures: ${state!.woodsKills??0} / 6 · Golem: ${state!.woodsBoss?'DOWN':'ALIVE'}`):state!.quest==='available'?'Talk to Scrappy in the town square.':state!.quest==='complete'?'Complete — Trash Town thanks you.':state!.questKills>=3?'Return to Scrappy for your reward.':`Clear toxic slimes: ${state!.questKills} / 3`}</p>",
+          'quest HUD body')
+          replace_once('components/tpu/game.tsx',
+          "<small>{state!.quest==='active'&&state!.questKills<3?'Head east → Toxic Outskirts':'[E] TALK / INTERACT'}</small>",
+          "<small>{inWoods?`ELITE RECOVERY ${woodsRecovered}/2 TODAY · WHISPER GROVE + RUST HAULER`:state!.quest==='active'&&state!.questKills<3?'Head east → Toxic Outskirts':'[E] TALK / INTERACT'}</small>",
+          'quest HUD secondary')
+          replace_once('components/tpu/game.tsx',
+          "BUILDINGS.forEach(b=>{ctx.fillStyle='#425661';ctx.fillRect(mx+b.x/WORLD.width*mw,my+b.y/WORLD.height*mh,b.w/WORLD.width*mw,b.h/WORLD.height*mh)});ctx.fillStyle='#d3fc78';",
+          "BUILDINGS.forEach(b=>{ctx.fillStyle='#425661';ctx.fillRect(mx+b.x/WORLD.width*mw,my+b.y/WORLD.height*mh,b.w/WORLD.width*mw,b.h/WORLD.height*mh)});if(p.x>=WOODS_START){for(const landmark of WOODS_LANDMARKS){ctx.fillStyle=landmark.kind==='boss'?'#e16c58':landmark.kind==='gate'?'#e0be63':landmark.kind==='grove'?'#8bd64b':landmark.kind==='wreck'?'#59cce8':'#f0dc8b';ctx.fillRect(mx+landmark.x/WORLD.width*mw-2,my+landmark.y/WORLD.height*mh-2,4,4);}}ctx.fillStyle='#d3fc78';",
+          'forest minimap landmarks')
+          replace_once('components/tpu/game.tsx',
+          "Defeat 6 forest creatures and the Ironroot Guardian, then return to Moss.",
+          "Defeat 6 standard forest creatures and the Ironroot Golem, then return to Moss.",
+          'quest journal golem name')
+          replace_once('components/tpu/game.tsx',
+          "Guardian: {state.woodsBoss?'DEFEATED':'ALIVE'}",
+          "Golem: {state.woodsBoss?'DEFEATED':'ALIVE'}",
+          'quest journal golem status')
+          replace_once('components/tpu/game.tsx',
+          "The Guardian respawns after 2 minutes and drops epic gear. Forest caches reset daily.</p>",
+          "The Golem respawns after 2 minutes and drops epic gear. Whisper Plaguewing and Hauler Sentinel are optional five-minute elites with unique rare gear.</p><p>Elite landmark recoveries: {woodsRecovered} / 2 claimed today. Whisper Grove and Rust Hauler caches can be recovered after their elite is defeated.</p>",
+          'quest journal elite explanation')
+
+          # Tests cover the finalization contract, not only presentation copy.
+          replace_once('tests/woods.test.mjs',
+          "import {initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';",
+          "import {GEAR,initialState,advance,movePosition,blocked,monsterHome,clearMonsterPath} from '../packages/game-core/world.ts';",
+          'woods test gear import')
+          replace_once('tests/woods.test.mjs',
+          "import {WOODS_ALL_SPAWNS,WOODS_ELITE_SPAWNS,WOODS_ENCOUNTER_DETAILS,WOODS_EVENTS,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,isWoodsElite,seedWoods,woodsEvent,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile,woodsRespawnDelay} from '../packages/game-core/woods.ts';",
+          "import {WOODS_ALL_SPAWNS,WOODS_ELITE_SPAWNS,WOODS_ENCOUNTER_DETAILS,WOODS_EVENTS,WOODS_EXIT,WOODS_LANDMARKS,WOODS_PROFILES,WOODS_SPAWNS,WOODS_TREES,isWoodsElite,seedWoods,woodsEvent,woodsKillReward,woodsMonsterHealth,woodsMonsterName,woodsMonsterProfile,woodsRespawnDelay} from '../packages/game-core/woods.ts';",
+          'woods test exit import')
+          replace_once('tests/woods.test.mjs',
+          "import {stepWorld} from '../packages/realtime/world.ts';",
+          "import {stepWorld} from '../packages/realtime/world.ts';\nimport {GEAR_ART} from '../packages/game-core/equipment-art.ts';",
+          'woods test gear art import')
+          replace_once('tests/woods.test.mjs',
+          " const safePoints=[[2470,760],...WOODS_ALL_SPAWNS.map(m=>[m.x,m.y])];",
+          " const safePoints=[[2470,760],[WOODS_EXIT.x,WOODS_EXIT.y],...WOODS_ALL_SPAWNS.map(m=>[m.x,m.y])];",
+          'gate walkability test')
+          replace_once('tests/woods.test.mjs',
+          " assert.deepEqual(WOODS_LANDMARKS.map(l=>l.id),['trail-camp','whisper-grove','rust-wreck','ironroot']);",
+          " assert.deepEqual(WOODS_LANDMARKS.map(l=>l.id),['trail-camp','whisper-grove','rust-wreck','ironroot','junkyard-gate']);",
+          'landmark list test')
+          replace_once('tests/woods.test.mjs',
+          " assert.ok(n.loot?.some(item=>item.key==='reinforced_vest'));",
+          " assert.ok(n.loot?.some(item=>item.key==='whisper_mantle'));",
+          'plaguewing unique loot test')
+          replace_once('tests/woods.test.mjs',
+          " assert.ok(n.loot?.some(item=>item.key==='neon_blade'));",
+          " assert.ok(n.loot?.some(item=>item.key==='hauler_arc_blaster'));",
+          'sentinel unique loot test')
+          elite_anchor="test('all forest atlas poses stay inside sheet 9',()=>{"
+          elite_test="""test('elite landmark gear has unique identity and stays below epic boss gear',()=>{\n assert.equal(GEAR.whisper_mantle.name,'Whisper Mantle');assert.equal(GEAR.whisper_mantle.armor,6);\n assert.equal(GEAR.hauler_arc_blaster.name,'Hauler Arc Blaster');assert.equal(GEAR.hauler_arc_blaster.damage,16);\n assert.ok(GEAR.whisper_mantle.armor>GEAR.reinforced_vest.armor&&GEAR.whisper_mantle.armor<GEAR.king_armor.armor);\n assert.ok(GEAR.hauler_arc_blaster.damage>GEAR.neon_blade.damage&&GEAR.hauler_arc_blaster.damage<GEAR.king_blade.damage);\n assert.equal(GEAR_ART.whisper_mantle,'whisper-mantle');assert.equal(GEAR_ART.hauler_arc_blaster,'hauler-arc-blaster');\n});\n\n"""+elite_anchor
+          replace_once('tests/woods.test.mjs',elite_anchor,elite_test,'elite gear balance test')
+          PY
+      - name: Commit final forest polish
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add packages/game-core/world.ts packages/game-core/woods.ts components/tpu/woods.ts components/tpu/game.tsx tests/woods.test.mjs
+          git diff --cached --check
+          git commit -m "Finalize Rusty Woods player-facing progression [skip ci]"
+          git push origin HEAD:feat/rusty-woods-finalization
