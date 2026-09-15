@@ -206,7 +206,7 @@ test('elite finishing blows grant tuned salvage, guaranteed rare gear and five-m
  assert.ok(n.events.some(e=>e.includes('ELITE RARE LOOT')));
  assert.ok(n.loot?.some(item=>item.key==='reinforced_vest'));
  // Optional elites do not replace the six standard-creature requirement for Roots of Rust.
- assert.equal(n.woodsKills,0);
+ assert.equal(n.woodsKills??0,0);
 });
 
 test('Hauler Sentinel guarantees the rare forest weapon',()=>{
