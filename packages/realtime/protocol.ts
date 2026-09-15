@@ -7,7 +7,7 @@ export const inputSchema=z.object({
  type:z.literal('input'),seq:z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
  scene:z.number().int().min(-1).max(11),
  action:z.object({
-  type:z.enum(['move','attack','interact','heal','craft','tick','buy_medkit','sell_circuit','upgrade','salvage_quest','bounty_quest','daily_claim','cache','enter','exit','dungeon_enter','equip','unequip','salvage','legacy_claim','legacy_pin','legacy_title','dodge']),
+  type:z.enum(['move','attack','interact','heal','craft','tick','buy_medkit','sell_circuit','upgrade','salvage_quest','bounty_quest','daily_claim','cache','woods_event','enter','exit','dungeon_enter','equip','unequip','salvage','legacy_claim','legacy_pin','legacy_title','dodge']),
   dx:z.number().finite().min(-1).max(1).optional(),dy:z.number().finite().min(-1).max(1).optional(),target:z.string().max(30).optional(),
  }).strict(),
  motion:z.array(z.object({dx:z.number().finite().min(-1).max(1),dy:z.number().finite().min(-1).max(1),ms:z.number().finite().min(0).max(40)}).strict()).max(40),
