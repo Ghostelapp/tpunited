@@ -1,14 +1,13 @@
-import {woodsMonsterProfile} from '../../packages/game-core/woods.ts';
+import {woodsMonsterProfile,type WoodsAtlasMonster} from '../../packages/game-core/woods.ts';
 
 export const WOODS_MONSTER_SHEET=9;
 type Frame=readonly [sx:number,sy:number,sw:number,sh:number];
-type AtlasMonster='sewer-eel'|'junk-hound'|'neon-bat'|'toxic-roach'|'drone-wasp'|'cable-serpent'|'scrap-golem';
 export type WoodsMonsterPose='idle'|'move'|'attack'|'hurt'|'death';
 type AtlasEntry={idle:Frame;move:readonly Frame[];attack:readonly Frame[];hurt:Frame;death:Frame;size:readonly [number,number];hover?:number};
 
 // Runtime crops from public/assets/sheet-9.webp. Crops stop above the caption plates
 // and expose the pack's real attack / hurt / death art rather than recolored town mobs.
-export const WOODS_MONSTER_ATLAS:Record<AtlasMonster,AtlasEntry>={
+export const WOODS_MONSTER_ATLAS:Record<WoodsAtlasMonster,AtlasEntry>={
  'sewer-eel':{
   idle:[245,30,105,105],move:[[350,45,165,92],[515,50,145,87]],
   attack:[[660,30,160,105],[815,30,160,105]],hurt:[970,35,135,100],death:[1095,35,145,100],size:[92,84],
@@ -36,6 +35,14 @@ export const WOODS_MONSTER_ATLAS:Record<AtlasMonster,AtlasEntry>={
  'scrap-golem':{
   idle:[210,716,145,101],move:[[355,716,137,101],[492,716,133,101]],
   attack:[[625,716,175,101],[790,716,165,101]],hurt:[950,716,140,101],death:[1080,716,165,101],size:[154,110],
+ },
+ 'riot-bot':{
+  idle:[205,960,135,72],move:[[345,960,145,72],[205,960,135,72]],
+  attack:[[485,960,145,72],[730,960,195,72]],hurt:[920,960,145,72],death:[1060,960,185,72],size:[116,80],
+ },
+ 'plague-pigeon':{
+  idle:[205,1055,130,63],move:[[345,1055,150,63],[205,1055,130,63]],
+  attack:[[485,1055,170,63],[645,1055,175,63]],hurt:[815,1055,150,63],death:[965,1055,180,63],size:[104,64],hover:6,
  },
 };
 
