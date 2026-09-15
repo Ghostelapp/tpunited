@@ -1,4 +1,4 @@
-import {WOODS_ENCOUNTER_DETAILS,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';
+import {WOODS_ELITE_ENCOUNTERS,WOODS_ENCOUNTER_DETAILS,WOODS_START,WOODS_TREES} from '@/packages/game-core/woods';
 
 function patch(g:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){
  g.fillStyle=color;g.beginPath();g.ellipse(x,y,w,h,0,0,Math.PI*2);g.fill();
@@ -38,6 +38,23 @@ function encounterGround(g:CanvasRenderingContext2D){
     g.save();g.translate(x,y);g.rotate(a+.4);g.strokeRect(-8,-4,16,8);g.restore();
    }
    g.beginPath();g.arc(encounter.x,encounter.y+17,14,0,Math.PI*2);g.stroke();g.beginPath();g.arc(encounter.x,encounter.y+17,5,0,Math.PI*2);g.stroke();
+  }
+  g.restore();
+ }
+}
+
+function eliteGround(g:CanvasRenderingContext2D){
+ for(const elite of WOODS_ELITE_ENCOUNTERS){
+  const plague=elite.marker==='plague';g.save();g.globalAlpha=.88;
+  patch(g,elite.x,elite.y+20,elite.radius,elite.radius*.38,plague?'#23341e':'#20343b');
+  g.strokeStyle=elite.accent;g.lineWidth=3;g.setLineDash([10,8]);
+  g.beginPath();g.ellipse(elite.x,elite.y+20,elite.radius,elite.radius*.38,0,0,Math.PI*2);g.stroke();g.setLineDash([]);
+  if(plague){
+   for(let i=0;i<9;i++){const a=i*.82,r=32+(i%3)*15;g.fillStyle=i%2?'#7daf42':'#4e6f32';g.beginPath();g.arc(elite.x+Math.cos(a)*r,elite.y+18+Math.sin(a)*r*.35,3+i%2,0,Math.PI*2);g.fill();}
+  }else{
+   g.strokeStyle='#527783';g.lineWidth=2;
+   for(let i=0;i<6;i++){const a=i*Math.PI/3,x=elite.x+Math.cos(a)*elite.radius*.62,y=elite.y+20+Math.sin(a)*elite.radius*.23;g.save();g.translate(x,y);g.rotate(a);g.strokeRect(-13,-6,26,12);g.restore();}
+   g.fillStyle='#59cce8';g.fillRect(elite.x-16,elite.y+14,32,7);
   }
   g.restore();
  }
@@ -85,9 +102,9 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
  g.fillStyle='#70523c';g.fillRect(3155,1330,125,48);g.fillStyle='#353d3c';g.fillRect(3172,1318,76,21);
  g.fillStyle='#202a29';g.beginPath();g.arc(3182,1381,16,0,Math.PI*2);g.arc(3260,1381,16,0,Math.PI*2);g.fill();
 
- // Every normal monster now has a readable habitat tell: sap/mire pools, bramble
- // dens, ash scars or mechanical nests. These are ground details, never blockers.
- encounterGround(g);
+ // Normal habitats stay readable, while elite landmarks have larger dashed arenas
+ // so players can identify optional high-value encounters before aggroing them.
+ encounterGround(g);eliteGround(g);
 
  // Boss grove gets its own darker arena, but the trail feeds into it naturally.
  g.fillStyle='#342e22';g.beginPath();g.arc(3540,820,165,0,Math.PI*2);g.fill();
@@ -104,7 +121,7 @@ export function drawWoodsGround(g:CanvasRenderingContext2D){
 
  g.fillStyle='#c6d799';g.font='bold 22px monospace';g.fillText('RUSTY WOODS · LVL 5–10',2420,640);
  g.font='14px monospace';g.fillStyle='#b8c79b';g.fillText('← TRASH TOWN',2300,900);g.fillText('IRONROOT GROVE →',3260,900);
- g.font='bold 11px monospace';g.fillStyle='#9cac84';g.fillText('WHISPER GROVE',3025,255);g.fillText('RUST HAULER',3160,1310);
+ g.font='bold 11px monospace';g.fillStyle='#9cac84';g.fillText('WHISPER GROVE · ELITE',2990,255);g.fillText('RUST HAULER · ELITE',3130,1310);
 }
 
 const FOREST_DETAILS=[
