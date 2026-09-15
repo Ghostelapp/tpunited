@@ -1,0 +1,54 @@
+name: Live Rusty Woods check
+on:
+  push:
+    branches: [ops/live-rusty-check]
+permissions:
+  contents: read
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check deployed game route
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          code="$(curl -sS -L --retry 5 --retry-delay 2 --max-time 30 -o "$tmp" -w '%{http_code}' https://game.tpunited.xyz/game)"
+          echo "/game HTTP $code"
+          test "$code" = "200"
+          test -s "$tmp"
+          grep -Eqi 'trash panda|scavenger|game|register|wallet' "$tmp"
+      - name: Check Rusty Woods monster atlas
+        shell: bash
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"; body="$(mktemp)"
+          code="$(curl -sS -L --retry 5 --retry-delay 2 --max-time 30 -D "$headers" -o "$body" -w '%{http_code}' https://game.tpunited.xyz/assets/sheet-9.webp)"
+          echo "sheet-9.webp HTTP $code"
+          test "$code" = "200"
+          bytes="$(wc -c < "$body")"
+          echo "sheet-9.webp bytes $bytes"
+          test "$bytes" -gt 50000
+          grep -Eqi '^content-type: *image/webp' "$headers"
+      - name: Check protected game API fails closed without session
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS --max-time 20 -o /tmp/game-api -w '%{http_code}' https://game.tpunited.xyz/api/game)"
+          echo "/api/game unauthenticated HTTP $code"
+          case "$code" in 401|403|428) ;; *) echo "Expected an authentication response, got $code"; cat /tmp/game-api; exit 1;; esac
+      - name: Check realtime socket route is present and protected
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS --http1.1 --max-time 20 -o /tmp/socket -w '%{http_code}' \
+            -H 'Connection: Upgrade' \
+            -H 'Upgrade: websocket' \
+            -H 'Sec-WebSocket-Version: 13' \
+            -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+            https://game.tpunited.xyz/api/game/socket || true)"
+          echo "/api/game/socket unauthenticated HTTP $code"
+          case "$code" in 400|401|403|426|428) ;; *) echo "Unexpected socket response $code"; cat /tmp/socket 2>/dev/null || true; exit 1;; esac
+      - name: Summary
+        run: echo 'Live Rusty Woods deployment surface checks passed.'
