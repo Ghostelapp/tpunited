@@ -139,7 +139,7 @@ export class SharedWorld {
     before.set(c.id,state);
    }
    const elapsed=Math.min(250,Math.max(0,now-world.updated_at));
-   const result=stepWorld(seedWoods(JSON.parse(world.monsters) as Monster[]),active.map(c=>({id:c.id,state:before.get(c.id)!,input:inputs.get(c.id)})),elapsed,now,this.tickNumber);
+   const result=stepWorld(seedWoods(JSON.parse(world.monsters) as Monster[]),active.map(c=>({id:c.id,state:before.get(c.id)!,input:inputs.get(c.id)})),elapsed,now,this.tickNumber,!settings||JSON.parse(settings.value).rustyWoodsEnabled!==false);
    const statements:D1PreparedStatement[]=[db().prepare("INSERT OR REPLACE INTO realtime_commit_guard(id,ok) VALUES(1,(SELECT COUNT(*) FROM realtime_world WHERE id='town' AND revision=?))").bind(world.revision)];
    // Check ALL versions before ANY write. D1 rolls back the batch on CHECK failure.
    for(const c of active){const row=rows.results.find(p=>p.user_id===c.id)!;
@@ -158,7 +158,7 @@ export class SharedWorld {
    const peers=active.map(c=>{const s=result.players.get(c.id)!;return {adminSkin:['ADMIN','SUPER_ADMIN'].includes(rows.results.find(p=>p.user_id===c.id)?.role??''),username:c.username,x:s.x,y:s.y,interior:s.interior,title:legacyTitle(s),hp:s.hp,maxHp:playerStats(s).hp,lastAttack:s.lastAttack};});
    for(const c of active){
     const input=inputs.get(c.id),previous=before.get(c.id)!,state=result.players.get(c.id)!;
-    const reset=!!input&&input.scene!==(previous.interior??-1)||state.interior!==previous.interior||state.events.some(e=>e.startsWith('Rescued'));
+    const reset=state.rustyWoodsEnabled!==previous.rustyWoodsEnabled||!!input&&input.scene!==(previous.interior??-1)||state.interior!==previous.interior||state.events.some(e=>e.startsWith('Rescued'));
     if(input){c.ack=input.seq;if(c.pending===input)c.pending=undefined;}
     const wire=structuredClone(state);
     for(const m of [...wire.monsters,...wire.dungeon?.monsters??[]]){delete m.navPath;delete m.navGoal;delete m.navAt;}

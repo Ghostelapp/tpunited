@@ -319,3 +319,35 @@ test('outdoor camera never exposes space beyond the terrain, including oversized
   }
  }
 });
+
+test('disabling Woods returns players, stops forest combat and preserves saved progression',()=>{
+ const monsters=seedWoods(initialState().monsters);const eel=monsters.find(m=>m.id===20);eel.hp=37;
+ const boss=monsters.find(m=>m.id===26);boss.hp=0;boss.respawn=900000;
+ const s=initialState();Object.assign(s,{x:3650,y:510,scrap:777,woodsQuest:'active',woodsKills:4,rustyWoodsEnabled:true});
+ const result=stepWorld(monsters,[{id:'p',state:s,input:{type:'input',seq:1,scene:-1,action:{type:'attack'},motion:[]}}],100,100000,0,false);
+ const player=result.players.get('p');assert.equal(player.rustyWoodsEnabled,false);assert.equal(player.x,1150);assert.equal(player.y,880);
+ assert.equal(player.scrap,777);assert.equal(player.woodsKills,4);assert.equal(player.woodsQuest,'active');assert.equal(player.strike,undefined);
+ assert.deepEqual(result.monsters.filter(m=>m.id>=20),monsters.filter(m=>m.id>=20));
+ const resumed=stepWorld(result.monsters,[{id:'p',state:player}],0,100001,0,true);
+ assert.equal(resumed.players.get('p').rustyWoodsEnabled,true);assert.equal(resumed.monsters.find(m=>m.id===20).hp,37);assert.equal(resumed.monsters.find(m=>m.id===26).respawn,900000);
+});
+
+test('closed Woods blocks walking, prediction and dodges but leaves interiors available',async()=>{
+ const {replayMotion,applyWoodsAvailability,activeMonsters}=await import('../packages/game-core/world.ts');
+ const s=initialState();s.x=2315;s.y=760;s.rustyWoodsEnabled=false;s.stamina=100;
+ assert.ok(movePosition(s,{dx:1,dy:0,ms:1000},undefined,false).x<=2320);
+ assert.ok(replayMotion(s,[{dx:1,dy:0,ms:1000}]).x<=2320);
+ assert.ok(advance(s,{type:'dodge',dx:1,dy:0},0,100000).x<=2320);
+ s.monsters=seedWoods(s.monsters);assert.ok(activeMonsters(s).every(m=>m.id<20));
+ s.interior=11;s.x=800;s.y=400;assert.equal(applyWoodsAvailability(s,false).x,800);
+ assert.ok(movePosition({x:2315,y:760},{dx:1,dy:0,ms:1000},undefined,true).x>2400);
+});
+
+test('game settings accept an explicit forest toggle and preserve old defaults',async()=>{
+ const {gameSettingsSchema,defaultGameSettings}=await import('../lib/community-config.ts');
+ const old={maintenance:false,registrationOpen:true,message:''};
+ assert.equal(gameSettingsSchema.parse(old).rustyWoodsEnabled,true);
+ assert.equal(gameSettingsSchema.parse({...old,rustyWoodsEnabled:false}).rustyWoodsEnabled,false);
+ assert.equal(gameSettingsSchema.safeParse({...old,rustyWoodsEnabled:'false'}).success,false);
+ assert.equal(defaultGameSettings.rustyWoodsEnabled,true);
+});

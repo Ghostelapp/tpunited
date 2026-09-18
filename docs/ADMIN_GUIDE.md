@@ -30,3 +30,11 @@ CSV obejmuje wyświetlone, maksymalnie 1000 najnowszych alokacji. Listy zadań/o
 
 ## Testy i ograniczenia
 `node --test scripts/admin.test.mjs` sprawdza API i SQLite z podstawioną tożsamością i odpowiedziami RPC. To nie test prawdziwego podpisu w portfelu ani transmisji środków. Testy gry: `npm run game:test`; typy: `npm run typecheck`. Przed kampanią z odbiorcami wykonaj małą próbę na dwóch własnych kontach/portfelach. Ta aktualizacja nie uruchamia żadnej kampanii i nie wypłaca środków automatycznie.
+
+## Rusty Woods availability
+
+Open **Game → Game availability**, change **Rusty Woods — region enabled**, then **Save game settings**.
+
+The persisted `site_content.game.rustyWoodsEnabled` setting is read by the authoritative realtime server on its next tick. Disabling returns outdoor forest players to the town spawn, closes the east gate, removes forest scenery/routes from the client and pauses forest enemy simulation. Walking, dodging and client prediction cannot cross the closed boundary. Interior/dungeon play continues. Quest progress, inventory, enemy health and respawn timestamps are retained. Re-enabling restores the region without redeployment or a reset.
+
+Existing configurations without the field keep the forest enabled. The admin endpoint's existing role checks, audit log and revision conflict protection apply. Deploy this release once to both the realtime and frontend workers before using the toggle; subsequent setting changes require only Save.
