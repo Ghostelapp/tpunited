@@ -49,3 +49,20 @@ test('collection limits bursts without storing raw network addresses',async()=>{
  const b=event(),headers={'cf-connecting-ip':'192.0.2.12'};await send(b,headers);const key=sqlite.prepare('SELECT key FROM analytics_limits').get().key;assert.match(key,/^[a-f0-9]{64}$/);assert.ok(!key.includes('192.0.2'));
  sqlite.prepare('UPDATE analytics_limits SET count=360').run();assert.equal((await send(event(),headers)).status,429);assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM analytics_views').get().n,1);
 });
+
+test('anonymous counter works without consent or identity and stores daily totals only',async()=>{
+ const counter=moduleAt('app/api/analytics/count/route.ts');
+ for(let i=0;i<2;i++)assert.equal((await counter.POST(request('/api/analytics/count',{path:'/parcel/123?token=secret'}))).status,200);
+ const rows=sqlite.prepare('SELECT * FROM analytics_counts').all();assert.equal(rows.length,1);assert.equal(rows[0].views,2);assert.equal(rows[0].path,'/parcel/:id');
+ assert.deepEqual(Object.keys(rows[0]).sort(),['day','host','path','views']);
+ assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM analytics_views').get().n,0);
+ const owner=admin(),result=await owner.call('admin/analytics');assert.equal(result.body.traffic.views,2);assert.equal(result.body.summary.visitors,0);
+});
+test('anonymous counter respects privacy signals, rejects extra identity fields and cross-origin requests',async()=>{
+ const counter=moduleAt('app/api/analytics/count/route.ts');
+ for(const header of ['dnt','sec-gpc']){const r=request('/api/analytics/count',{path:'/home'});r.headers.set(header,'1');assert.equal((await counter.POST(r)).status,200);}
+ assert.equal((await counter.POST(request('/api/analytics/count',{path:'/admin'}))).status,200);
+ assert.equal((await counter.POST(request('/api/analytics/count',{path:'/home',visitor:'forged'}))).status,400);
+ const bad=request('/api/analytics/count',{path:'/home'});bad.headers.set('origin','https://evil.test');assert.equal((await counter.POST(bad)).status,403);
+ assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM analytics_counts').get().n,0);
+});

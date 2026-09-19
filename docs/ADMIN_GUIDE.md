@@ -38,3 +38,11 @@ Open **Game → Game availability**, change **Rusty Woods — region enabled**, 
 The persisted `site_content.game.rustyWoodsEnabled` setting is read by the authoritative realtime server on its next tick. Disabling returns outdoor forest players to the town spawn, closes the east gate, removes forest scenery/routes from the client and pauses forest enemy simulation. Walking, dodging and client prediction cannot cross the closed boundary. Interior/dungeon play continues. Quest progress, inventory, enemy health and respawn timestamps are retained. Re-enabling restores the region without redeployment or a reset.
 
 Existing configurations without the field keep the forest enabled. The admin endpoint's existing role checks, audit log and revision conflict protection apply. Deploy this release once to both the realtime and frontend workers before using the toggle; subsequent setting changes require only Save.
+
+## Anonymous page counters
+
+Statistics now starts with daily page-view totals by site and normalized page category. This counter runs without consent to detailed analytics and sends only the page path, with credentials omitted and no referrer. It stores no per-visit record, browser/session ID, account, network address or fingerprint. It respects DNT/GPC and skips known automated agents. The browser excludes signed-in admins.
+
+These are page loads/navigation counts, not unique people; blocked JavaScript, privacy signals and delivery failures reduce coverage, and a public counter can be inflated by automated requests. Detailed account-linked visits still require explicit consent. Do not add the two totals: consenting visits can appear in both. CSV export includes separate sections. Data starts at deployment and is retained for 90 calendar days.
+
+Apply `drizzle/0019_anonymous_traffic.sql` before deploying the frontend. The existing PowerShell deployment script applies D1 migrations. No existing visitor history is deleted or reclassified.
