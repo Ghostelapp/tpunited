@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useRef} from 'react';
 import {usePathname} from 'next/navigation';
 import {useAuth} from './auth-provider';
 import {analyticsPath} from '@/lib/analytics';
@@ -7,6 +7,14 @@ const CHOICE='tpu-analytics-consent-v1',VISITOR='tpu-analytics-visitor-v1',SESSI
 type Choice='yes'|'no'|null;
 export default function VisitorAnalytics(){
  const pathname=usePathname(),auth=useAuth();const [choice,setChoice]=useState<Choice>(null),[loaded,setLoaded]=useState(false),[settings,setSettings]=useState(false);
+ const countedPath=useRef<string|null>(null);
+ useEffect(()=>{
+  if(auth.initializing||!pathname||!analyticsPath(pathname)||['ADMIN','SUPER_ADMIN'].includes(auth.user?.role??'')||navigator.doNotTrack==='1'||(navigator as Navigator&{globalPrivacyControl?:boolean}).globalPrivacyControl)return;
+  const count=()=>{if(document.visibilityState!=='visible'||countedPath.current===pathname)return;countedPath.current=pathname;
+   void fetch('/api/analytics/count',{method:'POST',credentials:'omit',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:pathname}),keepalive:true}).catch(()=>{});
+  };
+  count();document.addEventListener('visibilitychange',count);return()=>document.removeEventListener('visibilitychange',count);
+ },[pathname,auth.initializing,auth.user?.role]);
  useEffect(()=>{const read=()=>{try{const value=localStorage.getItem(CHOICE);setChoice(value==='yes'||value==='no'?value:null)}catch{setChoice('no')}setLoaded(true)};read();window.addEventListener('storage',read);return()=>window.removeEventListener('storage',read)},[]);
  function choose(value:'yes'|'no'){try{localStorage.setItem(CHOICE,value);if(value==='no'){localStorage.removeItem(VISITOR);sessionStorage.removeItem(SESSION)}}catch{}setChoice(value);setSettings(false)}
  useEffect(()=>{
@@ -30,5 +38,5 @@ export default function VisitorAnalytics(){
   return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',visibility);for(const name of events)window.removeEventListener(name,interact)};
  },[choice,loaded,pathname,auth.initializing,auth.user?.id,auth.user?.role]);
  if(!loaded||pathname?.startsWith('/admin'))return null;
- return <>{choice!==null&&!settings?<button className="analytics-preferences" onClick={()=>setSettings(true)} aria-label="Open analytics privacy settings">Privacy</button>:<aside className="analytics-consent" aria-label="Optional visitor analytics"><strong>HELP IMPROVE TRASH PANDA</strong><p>Allow visit statistics? We record pages, referral sites, campaign tags, country and device type. If signed in, visits include your username. A random browser ID recognises repeat visits. Data is kept for up to 90 days. <a href="/privacy">Details</a></p><div><button className="btn outline" onClick={()=>choose('no')}>DECLINE</button><button className="btn lime" onClick={()=>choose('yes')}>ALLOW ANALYTICS</button></div></aside>}</>;
+ return <>{choice!==null&&!settings?<button className="analytics-preferences" onClick={()=>setSettings(true)} aria-label="Open analytics privacy settings">Privacy</button>:<aside className="analytics-consent" aria-label="Optional visitor analytics"><strong>HELP IMPROVE TRASH PANDA</strong><p>Basic anonymous page counts run without cookies. Allow additional visit statistics? We record pages, referral sites, campaign tags, country and device type. If signed in, visits include your username. A random browser ID recognises repeat visits. Data is kept for up to 90 days. <a href="/privacy">Details</a></p><div><button className="btn outline" onClick={()=>choose('no')}>DECLINE</button><button className="btn lime" onClick={()=>choose('yes')}>ALLOW ANALYTICS</button></div></aside>}</>;
 }

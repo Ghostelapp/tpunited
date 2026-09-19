@@ -19,6 +19,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run game:test
       - run: npm run realtime:test
+      - run: npm run analytics:test
       - run: npm run art:test
       - run: npm run build
       - run: npm run realtime:build

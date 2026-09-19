@@ -22,5 +22,9 @@ export async function GET(req:Request){try{
   const rows=await database.prepare(`SELECT COALESCE(NULLIF(${column},''),'(not set)') label,COUNT(*) views,COUNT(DISTINCT visitor) visitors FROM analytics_views WHERE ${where} GROUP BY label ORDER BY views DESC,label LIMIT 20`).bind(start,end).all<AnalyticsBreakdown>();breakdowns[column]=rows.results;
  }));
  const recent=await database.prepare(`SELECT a.id,substr(a.visitor,1,8) visitor,r.username,a.host,a.path,a.country,a.device,a.browser,a.referrer,a.started_at,a.last_seen,a.active_seconds FROM analytics_views a LEFT JOIN registrations r ON r.user_id=a.user_id WHERE a.started_at>=? AND a.started_at<? ORDER BY a.started_at DESC LIMIT 100`).bind(start,end).all<AnalyticsReport['recent'][number]>();
- return json({from,to,generatedAt:now,summary:{...summary!,singlePageSessions:single?.count??0},online:online?.count??0,daily:daily.results,breakdowns,recent:recent.results} satisfies AnalyticsReport);
+ await database.prepare('DELETE FROM analytics_counts WHERE day<?').bind(new Date(now-89*DAY).toISOString().slice(0,10)).run();
+ const total=await database.prepare('SELECT COALESCE(SUM(views),0) views FROM analytics_counts WHERE day>=? AND day<=?').bind(from,to).first<{views:number}>();
+ const countDays=await database.prepare('SELECT day,SUM(views) views FROM analytics_counts WHERE day>=? AND day<=? GROUP BY day ORDER BY day').bind(from,to).all<{day:string;views:number}>();
+ const pages=await database.prepare('SELECT host,path,SUM(views) views FROM analytics_counts WHERE day>=? AND day<=? GROUP BY host,path ORDER BY views DESC LIMIT 50').bind(from,to).all<{host:string;path:string;views:number}>();
+ return json({traffic:{views:total?.views??0,daily:countDays.results,pages:pages.results},from,to,generatedAt:now,summary:{...summary!,singlePageSessions:single?.count??0},online:online?.count??0,daily:daily.results,breakdowns,recent:recent.results} satisfies AnalyticsReport);
 }catch(e){return fail(e)}}
