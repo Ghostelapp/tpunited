@@ -146,7 +146,7 @@ test('melee attacks cannot damage creatures through a building wall',()=>{
 
 test('town migration preserves progression and interiors while relocating old outdoor saves',async()=>{
  const {migrateTown,WORLD}=await import('./world.ts');const s=initialState();delete s.townLayout;s.x=800;s.y=600;s.scrap=231;s.quest='complete';s.monsters[0].hp=0;
- const n=migrateTown(s);assert.deepEqual({x:n.x,y:n.y},WORLD.spawn);assert.equal(n.scrap,231);assert.equal(n.quest,'complete');assert.equal(n.monsters[0].hp,0);assert.ok(n.monsters.every(m=>m.x>=1930));assert.equal(n.townLayout,2);
+ const n=migrateTown(s);assert.deepEqual({x:n.x,y:n.y},WORLD.spawn);assert.equal(n.scrap,231);assert.equal(n.quest,'complete');assert.equal(n.monsters[0].hp,0);assert.ok(n.monsters.every(m=>m.x>=1930));assert.equal(n.townLayout,3);
  s.interior=4;const room=migrateTown(s);assert.equal(room.interior,4);assert.equal(room.x,800);assert.equal(room.y,600);n.x=1200;assert.equal(migrateTown(n).x,1200);
 });
 
