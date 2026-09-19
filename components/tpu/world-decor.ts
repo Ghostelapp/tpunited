@@ -1,6 +1,7 @@
+import {TOWN_PROPS} from '../../packages/game-core/town-scenery.ts';
 import {BUILDINGS} from '../../packages/game-core/world.ts';
 type Decor={sheet:number;sx:number;sy:number;sw:number;sh:number;x:number;y:number;w:number;h:number};
-export const DECOR:Decor[]=[];
+export const DECOR:Decor[]=TOWN_PROPS.map(p=>({...p,sheet:7}));
 const prop=(sx:number,sy:number,sw:number,sh:number,x:number,y:number,w:number,h:number)=>DECOR.push({sheet:7,sx,sy,sw,sh,x,y,w,h});
 const foliage=(x:number,y:number,w=34,h=51)=>DECOR.push({sheet:10,sx:633,sy:692,sw:69,sh:103,x,y,w,h});
 // Each business gets its own frontage. The central walking axis remains empty.
@@ -33,5 +34,9 @@ for(const [x,y] of [[200,940],[405,1300],[1780,1120],[2270,340],[2260,1130]]){
 for(const [x,y] of [[270,1420],[1780,1570],[1830,180]]){
  prop(16,1071,122,79,x,y,96,62);prop(917,937,111,97,x+82,y-3,62,54);
 }
+
+// Planted verges frame the market and park; the paths remain open.
+for(const [x,y] of [[110,620],[435,620],[110,1000],[435,1000],[110,1170],[435,1170],[1320,300],[1540,300]])foliage(x,y,44,66);
+for(const [x,y] of [[110,890],[435,890],[110,1220],[435,1220],[1750,300],[2190,300]])prop(8,940,45,93,x,y,38,79);
 
 // Forest scenery is authored in woods-layout.ts and rendered by woodsObjects.
