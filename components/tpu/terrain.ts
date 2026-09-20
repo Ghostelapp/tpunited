@@ -22,24 +22,14 @@ export function makeTerrain(image:HTMLImageElement,rustyWoodsEnabled=true){
  // Crosswalks and parking markings are continuous world geometry, not framed tiles.
  g.fillStyle='#a4aea66e';for(const x of [615,1495])for(const y of [760,1150,1510])for(let i=-3;i<=3;i++)g.fillRect(x+i*12,y-39,6,78);
  g.strokeStyle='#68747266';g.lineWidth=2;for(let x=1290;x<1510;x+=48){g.strokeRect(x,1450,40,45)}
- // Authored district surfaces. Narrow paths connect the western pockets to
- // the boulevard, and keep the residential plots above them unobstructed.
- const paving=(x:number,y:number,w:number,h:number)=>{
-  g.fillStyle='#52605d';g.fillRect(x,y,w,h);g.fillStyle='#334247';g.fillRect(x+4,y+4,w-8,h-8);
-  g.strokeStyle='#61706a35';g.lineWidth=1;g.beginPath();
-  for(let px=x+24;px<x+w;px+=24){g.moveTo(px,y+4);g.lineTo(px,y+h-4);}
-  for(let py=y+24;py<y+h;py+=24){g.moveTo(x+4,py);g.lineTo(x+w-4,py);}g.stroke();
- };
- paving(90,565,360,280);paving(1300,140,260,170);paving(1745,125,550,200);
- g.fillStyle='#34483d';g.fillRect(90,980,360,260);
- g.fillStyle='#667069';g.fillRect(252,850,46,395);g.fillRect(90,1100,430,46);g.fillRect(275,850,245,42);
- g.fillStyle='#3e4d49';g.fillRect(258,850,34,389);g.fillRect(96,1106,418,34);g.fillRect(281,856,239,30);
- // Bordered planting beds, not obstacles across walking routes.
- for(const [x,y] of [[100,990],[355,990],[100,1170],[355,1170]]){g.fillStyle='#647363';g.fillRect(x,y,85,58);g.fillStyle='#243d31';g.fillRect(x+4,y+4,77,50);}
- // The loading apron gets parking bays and a striped safety edge.
- g.strokeStyle='#b7a06977';g.lineWidth=2;
- for(const x of [1765,1915,2065])g.strokeRect(x,145,130,155);
- g.fillStyle='#c6a55288';for(let x=1760;x<2290;x+=26)g.fillRect(x,318,14,5);
+ // Districts share the existing textured ground. Soft, unframed wear marks
+ // replace the editor-like grids, oversized rectangular pads and empty beds.
+ for(const [x,y,rx,ry] of [[275,740,170,105],[275,1100,170,125],[1430,245,125,90],[2010,255,270,95]]){
+  g.save();g.translate(x,y);g.scale(rx,ry);
+  const wear=g.createRadialGradient(0,0,.1,0,0,1);
+  wear.addColorStop(0,'#80908212');wear.addColorStop(1,'#80908200');
+  g.fillStyle=wear;g.fillRect(-1,-1,2,2);g.restore();
+ }
  // Subtle pools of warm light at the busiest public entrances.
  for(const b of BUILDINGS){const x=b.x+b.w/2,y=b.y+b.h+12,light=g.createRadialGradient(x,y,2,x,y,65);light.addColorStop(0,'#ffc76817');light.addColorStop(1,'#ffc76800');g.fillStyle=light;g.fillRect(x-65,y-65,130,130);}
  g.font='bold 12px monospace';g.textAlign='center';g.fillStyle='#9aada3';

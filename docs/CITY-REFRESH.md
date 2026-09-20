@@ -1,7 +1,7 @@
 # Trash Town scale and streetscape refresh
 
-Building widths increase by 12% and most heights by 22%. Northern roofs are
-capped below the perimeter. Entrance centres and baseline positions stay fixed;
+Buildings fit within a 12% wider and 22% taller envelope using the original
+atlas aspect ratio. Northern roofs are capped below the perimeter. Entrance centres and baseline positions stay fixed;
 the shared building definitions also update collision widths and the minimap.
 Existing saved characters caught in widened bases or new furniture return to the
 town spawn once, with progression preserved. Indoor positions are retained.
@@ -15,6 +15,11 @@ New authored places use the existing pixel-art atlas:
 - Salvager Park: paved walking paths, planted verges and larger benches.
 - Service plaza: vending machine and terminal scenery.
 - Freight yard: loading bays, crate stacks, dumpster and safety markings.
+
+The district ground uses the existing asphalt texture and soft wear marks, with
+no added grids, rectangular plaza carpets or empty planting-bed outlines. Benches
+match the older 70-pixel street benches, crates are smaller, and terminals and
+plants use a consistent street scale. New props preserve the atlas aspect ratio.
 
 New substantial furniture has ground-footprint collisions shared by client
 movement, server simulation and monster pathfinding. Existing decorative props
