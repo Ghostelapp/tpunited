@@ -17,7 +17,8 @@ export const WORLD={width:WOODS_WORLD_WIDTH,height:1700,spawn:{x:1150,y:880}};
 export const BUILDINGS=[{x:940,y:390,w:300,h:260,sx:0,sy:0,sw:365,sh:340,name:'City Hall'},{x:1280,y:400,w:250,h:250,sx:368,sy:30,sw:294,sh:310,name:'Workshop'},{x:1280,y:800,w:250,h:240,sx:980,sy:57,sw:274,sh:283,name:'General Store'},{x:600,y:800,w:260,h:240,sx:0,sy:375,sw:285,sh:264,name:'The Trashy Tavern'},{x:600,y:400,w:260,h:250,sx:284,sy:377,sw:269,sh:261,name:'Clinic'},{x:940,y:1170,w:300,h:230,sx:559,sy:667,sw:341,sh:220,name:'Market Arcade'},{x:1280,y:1170,w:250,h:230,sx:666,sy:72,sw:315,sh:268,name:'Mechanic Garage'},{x:600,y:90,w:260,h:240,sx:1040,sy:371,sw:214,sh:267,name:'Apartments'},{x:600,y:1170,w:260,h:230,sx:0,sy:666,sw:232,sh:221,name:'Tech Exchange'},{x:1900,y:1330,w:280,h:230,sx:235,sy:678,sw:320,sh:209,name:'Salvage Depot'},{x:940,y:90,w:270,h:240,sx:560,sy:369,sw:268,sh:268,name:'Old Bank'}].map(b=>{
  // Keep entrance centres and pavement baselines fixed; widen facades and
  // grow roofs upward, leaving clearance below the northern perimeter.
- const w=Math.round(b.w*1.12),h=Math.min(Math.round(b.h*1.22),b.y+b.h-84);
+ const maxH=Math.min(b.h*1.22,b.y+b.h-84);
+ const w=Math.min(b.w*1.12,maxH*b.sw/b.sh),h=w*b.sh/b.sw;
  return {...b,x:b.x-(w-b.w)/2,y:b.y+b.h-h,w,h};
 });
 export const WORLD_LIMITS={left:59,right:WORLD.width-59,top:86,bottom:WORLD.height-94};

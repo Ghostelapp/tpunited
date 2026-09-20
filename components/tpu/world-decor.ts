@@ -36,7 +36,7 @@ for(const [x,y] of [[270,1420],[1780,1570],[1830,180]]){
 }
 
 // Planted verges frame the market and park; the paths remain open.
-for(const [x,y] of [[110,620],[435,620],[110,1000],[435,1000],[110,1170],[435,1170],[1320,300],[1540,300]])foliage(x,y,44,66);
-for(const [x,y] of [[110,890],[435,890],[110,1220],[435,1220],[1750,300],[2190,300]])prop(8,940,45,93,x,y,38,79);
+for(const [x,y] of [[110,620],[435,620],[110,1000],[435,1000],[110,1170],[435,1170],[1320,300],[1540,300]])foliage(x,y,32,48);
+for(const [x,y] of [[110,890],[435,890],[110,1220],[435,1220],[1750,300],[2190,300]])prop(8,940,45,93,x,y,30,62);
 
 // Forest scenery is authored in woods-layout.ts and rendered by woodsObjects.
