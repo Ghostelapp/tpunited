@@ -1,3 +1,4 @@
+import {runScheduledQuests} from '../../lib/quest-verification';
 import {seedWoods} from '../game-core/woods';
 import {requireUser,session,SESSION_MAX} from '../../lib/auth';
 import {db,fail,HttpError,sameOrigin,type PlayerRow} from '../../lib/server';
@@ -13,6 +14,7 @@ type WorldRow={monsters:string;revision:number;updated_at:number};
 type CachedGear={key:string;at:number;gear:GameState['nftGear'];equipment:GameState['equipment']};
 
 export default {
+ async scheduled(_event:ScheduledController,_env:Cloudflare.Env,ctx:ExecutionContext){ctx.waitUntil(runScheduledQuests());},
  async fetch(req:Request,env:Cloudflare.Env){
   try{
    sameOrigin(req);
