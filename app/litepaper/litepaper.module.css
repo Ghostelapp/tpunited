@@ -13,3 +13,17 @@
 .heroPortrait{width:180px;flex-shrink:0;margin-left:25px}.heroPortrait>svg{width:100%;height:auto;max-height:270px}.heroCopy{min-width:0}.art figure>svg{width:100%;height:180px}.loopArt{height:85px;display:flex;align-items:center;justify-content:center;margin:8px 0 16px}.loopArt>svg,.loopArt>img{width:100%;height:100%;max-height:85px;object-fit:contain;image-rendering:pixelated}
 @media(max-width:800px){.heroPortrait{width:120px;margin-left:15px}.hero h1{font-size:clamp(38px,7vw,65px)}}
 @media(max-width:580px){.heroPortrait{display:none}.art figure>svg{height:105px}.art img{max-height:105px}.art figcaption{font-size:8px}.loopArt{height:65px}}
+
+/* Reading sizes stay legible on desktop and mobile; preserve print styles. */
+@media screen{
+ .paper{--muted:#c5d4dc;font-size:17px}
+ .layout{width:calc(100% - 40px);max-width:1360px;padding:48px 24px 80px;gap:36px}
+ .top,.contents,.actions a{font-size:15px;line-height:1.6}
+ .kicker,.hero small,.intro small,.loop li,.art figcaption,.art>p,.sources,.footer{font-size:14px;line-height:1.7}
+ .blocks p,.callout,.tableWrap table{font-size:16px;line-height:1.75}
+ .blocks h3{font-size:21px}.blocks{gap:28px}
+ .chapter h2{font:800 clamp(27px,3vw,40px)/1.25 Arial,Helvetica,sans-serif;letter-spacing:0}
+ .loop{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+ .actions a{min-height:48px}.tableWrap{max-width:100%}
+ @media(max-width:580px){.layout{width:100%;padding:28px 20px 50px}.top{flex-wrap:wrap}.blocks{grid-template-columns:1fr}.art figcaption{font-size:13px}.loop{grid-template-columns:1fr 1fr}}
+}
